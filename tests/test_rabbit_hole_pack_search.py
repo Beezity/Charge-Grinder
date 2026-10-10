@@ -7,17 +7,39 @@ from source.rabbit_hole import CheckpointRequired
 
 class PackSearchTests(unittest.TestCase):
     def test_existing_target_avoids_purchase(self):
-        io=Mock();v=Mock();v.active.return_value=False;v.target.return_value=(320,680)
+        io=Mock();v=Mock();v.library.return_value=False;v.active.return_value=False;v.target.return_value=(320,680)
         self.assertEqual(search_pack(io,1,v),(320,680));io.click.assert_not_called()
     def test_purchase_once_after_scroll(self):
-        io=Mock();v=Mock();v.active.return_value=False;v.target.side_effect=[None,None,(960,570),(320,680)]
+        io=Mock();v=Mock();v.library.return_value=False;v.active.return_value=False;v.target.side_effect=[None,None,(960,570),(320,680)]
         self.assertEqual(search_pack(io,2,v),(320,680))
         io.scroll.assert_called_once()
         self.assertEqual([c.args[0] for c in io.click.call_args_list],[(280,70),(410,330),(960,570),(1180,870),(1145,740)])
     def test_missing_pack_never_confirms_or_substitutes(self):
-        io=Mock();v=Mock();v.active.return_value=False;v.target.return_value=None
+        io=Mock();v=Mock();v.library.return_value=False;v.active.return_value=False;v.target.return_value=None
         with self.assertRaises(CheckpointRequired):search_pack(io,4,v)
         self.assertEqual(io.click.call_count,2);self.assertEqual(io.scroll.call_count,12)
+
+class PackRecoveryTests(unittest.TestCase):
+    def test_resume_open_library_cancels_before_pulling_existing_target(self):
+        io=Mock();v=Mock()
+        v.library.return_value=True;v.active.return_value=False
+        v.target.return_value=(320,680)
+        self.assertEqual(search_pack(io,1,v),(320,680))
+        io.click.assert_called_once_with((760,870))
+
+    def test_active_search_is_disabled_before_pulling(self):
+        io=Mock();v=Mock();v.library.return_value=False
+        v.target.return_value=(320,680);v.active.return_value=True
+        self.assertEqual(search_pack(io,1,v),(320,680))
+        io.click.assert_called_once_with((280,70))
+        self.assertEqual(io.wait_for.call_count,1)
+
+    def test_confirmation_requires_exact_destination_not_a_substring(self):
+        from source.rabbit_hole_shop_vision import Word
+        reader=Mock();v=PackVision(reader)
+        for destination,expected in [('Line 2',True),('Line 20',False),('Crawling Abyss',False)]:
+            reader.read.return_value=[Word("'Other' Pack will be replaced with '"+destination+"' Pack.",1,0,0)]
+            self.assertEqual(v.replacement(None,5),expected)
 
 @unittest.skipUnless(os.environ.get('RABBIT_PACK_CAPTURE_DIR'),'Original pack screenshots not enabled')
 class CaptureTests(unittest.TestCase):

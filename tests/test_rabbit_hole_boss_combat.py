@@ -100,6 +100,39 @@ class BattlePolicyTests(unittest.TestCase):
 
 
 
+class RosesRetargetTests(unittest.TestCase):
+    def io(self, coverage):
+        io=object.__new__(SoloBattleIO)
+        io.capture=Mock(return_value='frame')
+        io.wait_for=Mock();io.retarget_ego=Mock()
+        io.vision=Mock();io.vision.templates={'ego_slot':None}
+        io.vision.locate.return_value=(852,818)
+        io.vision.roses_targets.side_effect=coverage
+        io.vision.targets.side_effect=lambda frame,name: [(1313,215)] if name=='roses_red' else [(1524,215)] if name=='roses_green' else []
+        return io
+
+    def test_verified_existing_coverage_needs_no_drag(self):
+        io=self.io([True]);io.verify_roses()
+        io.retarget_ego.assert_not_called();io.wait_for.assert_called_once()
+
+    def test_try_another_part_then_verify_coverage(self):
+        io=self.io([False,False,True]);io.verify_roses()
+        self.assertEqual([c.args for c in io.retarget_ego.call_args_list],
+                         [((852,818),(1313,215)),((852,818),(1524,215))])
+        io.wait_for.assert_called_once()
+
+    def test_missing_coverage_exhausts_unique_targets_without_starting(self):
+        io=self.io([False]*7)
+        with self.assertRaises(CheckpointRequired):io.verify_roses()
+        self.assertEqual(io.retarget_ego.call_count,2)
+        io.wait_for.assert_not_called()
+
+    def test_missing_ego_anchor_never_drags(self):
+        io=self.io([False]);io.vision.locate.return_value=None
+        with self.assertRaises(CheckpointRequired):io.verify_roses()
+        io.retarget_ego.assert_not_called()
+
+
 class RetryInputTests(unittest.TestCase):
     def io(self):
         import types

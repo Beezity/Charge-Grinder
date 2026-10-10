@@ -164,7 +164,7 @@ class RuntimeTests(unittest.TestCase):
                 stub.p = types.SimpleNamespace(stop_event=types.SimpleNamespace(is_set=lambda: False),
                                                LIMBUS_NAME="LimbusCompany", LVL=3)
                 stub.now = stub.now_rgb = types.SimpleNamespace(button=lambda name: name == visible)
-                stub.time = types.SimpleNamespace(sleep=Mock())
+                stub.time = types.SimpleNamespace(sleep=Mock(), monotonic=Mock(side_effect=[0,11]))
                 stub.gui = types.SimpleNamespace(getActiveWindowTitle=lambda: "LimbusCompany")
                 stub.pause = Mock()
                 stub.StopExecution = type("StopExecution", (Exception,), {})

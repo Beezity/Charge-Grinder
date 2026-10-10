@@ -22,7 +22,13 @@ def repeat_runs(run, params, count, resource_check=None):
     completed=0
     failures=0
     while completed<count and not params.stop_event.is_set():
-        if run():
+        succeeded = run()
+        if params.stop_event.is_set():
+            return completed + int(bool(succeeded))
+        # Match upstream: conversion also runs after the final requested run.
+        if resource_check is not None:
+            resource_check()
+        if succeeded:
             completed+=1
             failures=0
         else:
@@ -33,8 +39,8 @@ def repeat_runs(run, params, count, resource_check=None):
                 raise CheckpointRequired('Three consecutive runs failed. Automation stopped instead of spending resources indefinitely.')
         if completed>=count:
             return completed
-        if resource_check is not None:
-            resource_check()
+        if params.stop_event.is_set():
+            return completed
         reset_run(params)
     return completed
 

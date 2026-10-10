@@ -71,8 +71,11 @@ def run():
     from source.event import event
     from source.grab import grab_EGO, grab_card, confirm
 
+    unknown_since = None
     while not p.stop_event.is_set():
-        if p.LIMBUS_NAME not in (window := gui.getActiveWindowTitle()):
+        unknown_stage = None
+        if p.LIMBUS_NAME not in (window := gui.getActiveWindowTitle() or ""):
+            unknown_since = None
             pause(window)
             continue
         if now.button("ServerError"):
@@ -91,7 +94,7 @@ def run():
         elif try_first_turn():
             pass
         elif now_rgb.button("winrate") or now.button("pause"):
-            checkpoint("combat")
+            unknown_stage = "combat"
         elif now.button("shop") or now.button("supershop"):
             from source.rabbit_hole_shop_adapter import run_windows_shop
             run_windows_shop()
@@ -135,6 +138,12 @@ def run():
         elif confirm():
             pass
         else:
-            checkpoint("setup" if p.LVL == 1 else "unknown")
+            unknown_stage = "setup" if p.LVL == 1 else "unknown"
+        if unknown_stage is None:
+            unknown_since = None
+        elif unknown_since is None:
+            unknown_since = time.monotonic()
+        elif time.monotonic() - unknown_since >= 10:
+            checkpoint(unknown_stage)
         time.sleep(0.2)
     raise StopExecution

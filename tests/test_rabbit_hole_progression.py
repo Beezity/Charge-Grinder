@@ -28,7 +28,18 @@ class ProgressionTests(unittest.TestCase):
         check=Mock()
         self.assertEqual(repeat_runs(run,p,3,check),3)
         self.assertEqual(seen,[(5,'Boss'),(1,None),(1,None)])
-        self.assertEqual(check.call_count,2)
+        self.assertEqual(check.call_count,3)
+
+    def test_final_run_still_converts_modules(self):
+        p=self.params();check=Mock()
+        self.assertEqual(repeat_runs(Mock(return_value=True),p,1,check),1)
+        check.assert_called_once()
+
+    def test_stop_after_run_prevents_module_conversion(self):
+        p=self.params();check=Mock()
+        def run():p.stop_event.set();return True
+        self.assertEqual(repeat_runs(run,p,2,check),1)
+        check.assert_not_called()
 
     def test_failure_retry_is_bounded_and_respects_restart(self):
         p=self.params();run=Mock(return_value=False)
@@ -92,7 +103,7 @@ class ProgressionTests(unittest.TestCase):
 
     def test_runtime_dispatches_shared_events_rewards_confirmation_and_victory(self):
         import source.rabbit_hole_runtime as runtime
-        states=['event','EGObin','encounterreward','Confirm','victory'];calls=[]
+        states=['transition','event','EGObin','encounterreward','Confirm','victory'];calls=[]
         p=self.params();p.LIMBUS_NAME='Limbus';p.LVL=1
         def button(key):return bool(states and states[0]==key)
         def handler(key):
@@ -102,7 +113,7 @@ class ProgressionTests(unittest.TestCase):
             return action
         utils=ModuleType('source.utils.utils')
         utils.__dict__.update(p=p,now=SimpleNamespace(button=button),now_rgb=SimpleNamespace(button=button),
-                             time=SimpleNamespace(sleep=Mock()),gui=SimpleNamespace(getActiveWindowTitle=lambda:'Limbus'),pause=Mock(),StopExecution=RuntimeError)
+                             time=SimpleNamespace(sleep=lambda _:states.pop(0) if states and states[0]=='transition' else None,monotonic=lambda:0),gui=SimpleNamespace(getActiveWindowTitle=lambda:'Limbus'),pause=Mock(),StopExecution=RuntimeError)
         mods={'source.utils.utils':utils}
         for name,attrs in {
             'source.pack':{'pack':Mock()},'source.move':{'move':Mock()},

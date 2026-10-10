@@ -87,9 +87,40 @@ class SoloBattleIO(DesktopInput):
             self.reader = ShopVision()
         return self.reader
 
+    def retarget_ego(self, source, target):
+        self.guard()
+        self.u.win_moveTo(*source, tsize=(1,1))
+        try:
+            self.u.win_dragTo(*target, duration=.5, tsize=(1,1))
+        finally:
+            self.u.gui.mouseUp()
+        self.guard()
+        self.u.time.sleep(.3)
+
     def verify_roses(self):
-        self.wait_for(self.vision.roses_targets,
-                      'Boucher does not visibly cover both Roses parts and the flower.')
+        # Win Rate may clash with a part whose weight does not cover the flower.
+        # Try only recognized boss skills; never start an unverified arrangement.
+        tried=[]
+        for _ in range(7):
+            frame=self.capture()
+            if self.vision.roses_targets(frame):
+                self.wait_for(self.vision.roses_targets,
+                              'Roses target coverage changed before Start.')
+                return
+            sources=[self.vision.locate(frame,n) for n in self.vision.templates
+                     if n.startswith('ego_slot')]
+            sources=[point for point in sources if point is not None]
+            targets=[]
+            for name in ('roses_red','roses_red_alt','roses_green','roses_green_alt'):
+                targets.extend(self.vision.targets(frame,name))
+            candidates=[point for point in sorted(targets)
+                        if all(abs(point[0]-old[0])+abs(point[1]-old[1])>25 for old in tried)]
+            if not sources or not candidates or len(tried)>=6:
+                break
+            point=candidates[0]
+            tried.append(point)
+            self.retarget_ego(min(sources,key=lambda p:p[0]),point)
+        raise CheckpointRequired('Boucher could not cover both Roses parts and the flower after bounded retargeting. No turn was started.')
 
     def reset(self):
         # The supplied clip verifies Esc -> Retry Stage -> defeat/loading.

@@ -461,6 +461,8 @@ def execute_me(count, count_exp, count_thd, teams, settings, hard, app, warning)
             from source.rabbit_hole_progression import configure_rewards, repeat_runs
             configure_rewards(p, TEAMS, settings['keywordless'])
             repeat_runs(main_loop, p, count, check_enkephalin if p.NETZACH else None)
+            if p.stop_event.is_set():
+                return
             if p.ALTF4:
                 close_limbus()
             if p.APP:

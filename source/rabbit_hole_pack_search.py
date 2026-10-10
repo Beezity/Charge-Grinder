@@ -52,16 +52,37 @@ class PackVision:
 
     def replacement(self, frame, floor):
         text=''.join(key(w.text) for w in self.words(frame,(610,355,705,110)) if w.score>=.90)
-        return 'willbe' in text and 'replacedwith' in text and key(NAMES[floor]) in text.split('replacedwith',1)[-1]
+        before, separator, after = text.partition('replacedwith')
+        return bool(separator and before.endswith('packwillbe')
+                    and after == key(NAMES[floor]) + 'pack')
+
+
+def _ready_to_pull(io, floor, vision, frame):
+    # Search mode must be off before pulling the selected card.
+    if vision.active(frame):
+        io.click((280,70))
+        frame=io.wait_for(lambda f:not vision.active(f) and vision.target(f,floor) is not None,
+                          'Pack Search did not close after selecting the target.')
+    point=vision.target(frame,floor)
+    if point is None:
+        raise CheckpointRequired('The required offered pack is no longer visible; no card was pulled.')
+    return point
 
 
 def search_pack(io, floor, vision):
     """Return a verified offered-card point after at most one purchase."""
-    point=vision.target(io.capture(),floor)
-    if point:return point
-    if not vision.active(io.capture()):
+    frame=io.capture()
+    # Resume an already-open search without clicking through its overlay.
+    if vision.library(frame,floor):
+        io.click((760,870))
+        frame=io.wait_for(lambda f:not vision.library(f,floor),
+                          'The existing Pack Search panel did not close.')
+    point=vision.target(frame,floor)
+    if point:
+        return _ready_to_pull(io,floor,vision,frame)
+    if not vision.active(frame):
         io.click((280,70))
-        io.sleep(.4)
+        io.wait_for(vision.active,'Pack Search mode did not activate.')
     io.click((410,330))
     io.wait_for(lambda f:vision.library(f,floor),'Pack Search did not open.')
     for attempt in range(12):
@@ -73,9 +94,9 @@ def search_pack(io, floor, vision):
             io.click((1180,870))
             io.wait_for(lambda f:vision.replacement(f,floor),'The replacement confirmation does not name the required pack.')
             io.click((1145,740))
-            io.wait_for(lambda f:not vision.library(f,floor) and vision.target(f,floor) is not None,
-                        'The purchased pack did not appear in the offered cards.',seconds=12)
-            return vision.target(io.capture(),floor)
+            frame=io.wait_for(lambda f:not vision.library(f,floor) and vision.target(f,floor) is not None,
+                              'The purchased pack did not appear in the offered cards.',seconds=15)
+            return _ready_to_pull(io,floor,vision,frame)
         # Scroll only inside the pack list; select only a recognized title.
         io.scroll()
         io.sleep(.4)
