@@ -180,6 +180,10 @@ def pack():
             from source.rabbit_hole_runtime import checkpoint
             checkpoint("difficulty", f"Could not verify {'Hard' if p.HARD else 'Normal'} difficulty. Set it manually before selecting a pack.")
 
+    if p.RABBIT_HOLE:
+        from source.rabbit_hole_pack_search import select_required_pack
+        return select_required_pack()
+
     print(f"Entering Floor {p.LVL}")
     logging.info(f"Floor {p.LVL}")
 

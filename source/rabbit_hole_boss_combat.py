@@ -45,17 +45,27 @@ class SoloBattleIO(DesktopInput):
         return any(w.score >= .94 and key(w.text) == labels[card]
                    for w in self._reader().read(frame,(1040,495,320,55),scale=2))
 
+    def overclock_visible(self, frame):
+        from source.rabbit_hole_vision import HollowVision
+        vision=HollowVision()
+        spec,_=vision.templates['menu_overclock']
+        return vision.scores(frame).get('menu_overclock',0)>=spec['threshold']
+
     def choose_ego(self, action):
         frame = self.capture()
-        point = self.vision.locate(frame,'mao_solo')
+        slots = self.vision.targets(frame,'mao_solo')
+        point = min(slots,key=lambda pos:pos[0]) if slots else None
         if point is None:
             raise CheckpointRequired('Mao Faust is not selectable for EGO.')
         self.hold(point,1.5)
-        card = 'le_trou' if action == 'le_trou' else 'boucher'
+        card = 'le_trou' if action in ('le_trou','hollow') else 'boucher'
         self.wait_for(lambda f: self.vision.locate(f,'mao_menu') is not None and
                       self.card_visible(f,card),
                       f'The expected {card} card is not visible.')
-        # Click once for Awakening. No hold to force overclock/corrosion.
+        if action == 'hollow':
+            self.hold((1180,391),1.5)
+            self.wait_for(lambda f: self.overclock_visible(f),
+                          'Hollow corrosion was not verified.')
         self.click((1180,391))
         self.wait_for(lambda f: self.vision.ego_selected(f) and
                       self.vision.locate(f,'mao_menu') is None,
@@ -119,12 +129,12 @@ def advance(policy, state, io):
     if action == 'reset':
         policy.reset_verified(io.reset())
         return 'reset'
-    if action in ('le_trou','boucher','boucher_roses'):
+    if action in ('le_trou','boucher','boucher_roses','hollow'):
         io.choose_ego('boucher' if action == 'boucher_roses' else action)
         if action == 'boucher_roses':
             io.verify_roses()
     else:
-        io.auto_select('damage' if action in ('damage','wait_emergence') else 'winrate')
+        io.auto_select('damage' if action == 'damage' else 'winrate')
     io.start(state)
     policy.started(action,state)
     return action

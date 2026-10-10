@@ -21,25 +21,25 @@ class BattlePolicyTests(unittest.TestCase):
     def test_finished_battle_does_not_retry(self):
         self.assertEqual(BattlePolicy('kod').decide(BattleState(3,alive=False)),'finished')
 
-    def test_faelantern_le_trou_does_not_depend_on_corrosion_or_charm(self):
+    def test_faelantern_waits_for_emergence_even_on_turn_one(self):
         for corroded in (False,True):
             p=BattlePolicy('faelantern')
-            self.assertEqual(p.decide(BattleState(1,charmed=True,corroded=corroded)),'le_trou')
+            self.assertEqual(p.decide(BattleState(1,charmed=True,corroded=corroded)),'wait_emergence')
 
     def test_faelantern_can_emerge_on_turn_two_or_three(self):
         for turn in (2,3):
             p=BattlePolicy('faelantern',le_trou_used=True)
-            self.assertEqual(p.decide(BattleState(turn,emerged=True)),'boucher')
+            self.assertEqual(p.decide(BattleState(turn,emerged=True)),'hollow')
             self.assertEqual(p.decide(BattleState(turn,emerged=False)),'wait_emergence')
 
     def test_unselectable_faust_waits_without_reset(self):
         p=BattlePolicy('faelantern',le_trou_used=True)
         self.assertEqual(p.decide(BattleState(2,emerged=True,charmed=True)),'wait_emergence')
 
-    def test_damage_only_after_verified_boucher(self):
+    def test_damage_only_after_verified_hollow(self):
         p=BattlePolicy('faelantern',le_trou_used=True)
         io=Mock();state=BattleState(3,emerged=True)
-        self.assertEqual(advance(p,state,io),'boucher')
+        self.assertEqual(advance(p,state,io),'hollow')
         self.assertEqual(p.decide(BattleState(4,corroded=True)),'damage')
         self.assertNotEqual(p.decide(state),'damage')
 
@@ -65,9 +65,15 @@ class BattlePolicyTests(unittest.TestCase):
         io.auto_select.assert_called_once_with('winrate');io.start.assert_called_once()
 
     def test_damage_fallback_dispatches_damage_once(self):
-        io=Mock();p=BattlePolicy('faelantern',boucher_used=True)
+        io=Mock();p=BattlePolicy('faelantern',hollow_used=True)
         advance(p,BattleState(4),io)
         io.auto_select.assert_called_once_with('damage');io.choose_ego.assert_not_called()
+
+    def test_faelantern_wait_dispatches_winrate_without_ego(self):
+        io=Mock();p=BattlePolicy('faelantern')
+        self.assertEqual(advance(p,BattleState(1,emerged=False),io),'wait_emergence')
+        io.auto_select.assert_called_once_with('winrate');io.choose_ego.assert_not_called()
+        self.assertFalse(p.hollow_used)
 
     def test_reset_requires_verified_turn_one(self):
         p=BattlePolicy('kod',le_trou_used=True,boucher_used=True,started_turns={1,2});io=Mock()

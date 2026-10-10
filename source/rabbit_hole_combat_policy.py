@@ -36,14 +36,9 @@ class BattlePolicy:
         if not state.planning or state.turn in self.started_turns:
             return "wait"
         if self.encounter == "faelantern":
-            if self.boucher_used:
+            if self.hollow_used:
                 return "damage"
-            if not self.le_trou_used:
-                if state.turn != 1:
-                    raise CheckpointRequired("Cannot infer whether Le Trou was used before resuming Faelantern.")
-                return "le_trou"
-            # Charm/corrosion do not cause retries or choose the EGO variant.
-            return "boucher" if state.emerged and not state.charmed else "wait_emergence"
+            return "hollow" if state.emerged and not state.charmed else "wait_emergence"
         if self.hollow_used or self.boucher_used:
             return "winrate"
         if not self.le_trou_used:

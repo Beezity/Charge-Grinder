@@ -89,12 +89,9 @@ def combat(number, boss=False, faelantern=False, turn=1):
     if number <= 3 and not (number == 3 and boss):
         return "OVERCLOCK Hollow Faust; field Faust solo."
     if faelantern:
-        if turn == 1:
-            return ("Field Mao Faust solo. Use Awakening Hollow "
-                    "(Le Trou) on Faust; accept corrosion and do not retry for Charm.")
-        return ("Use Awakening Hollow (Boucher un trou) only after Faelantern emerges. "
-                "Do not use the other sinners' attacks after turn 1. "
-                "If it survives after Boucher un trou, use Damage.")
+        return ("Field Mao Faust solo. Use Win Rate until Faelantern emerges, then "
+                "overclock Le Trou for Hollow corrosion; accept corrosion. "
+                "If it survives, use Damage.")
     if number == 4 and boss and turn > 2:
         return "RETRY: KoD survived turn 2."
     if turn == 1:

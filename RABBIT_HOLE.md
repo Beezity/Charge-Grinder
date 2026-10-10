@@ -80,21 +80,19 @@ title before starting; the keyword alone does not enable Rabbit Hole.
 | 4 | Normal | Hatred and Despair | Heal Faust to 45 SP. Have Poise Rock, CMCW++, Sinking Rock and Artistic Sense++. Awakening turns 1/2; retry if KoD survives turn 2. |
 | 5 | Hard | Line 2 | Solo Faust, no new SP heal. Awakening turns 1/2; turn 2 must hit Rose, Signpost and Flesh. |
 
-Faelantern exception on floor 3: Slash/Pride/Lust identifies the boss. Field
-Mao Faust solo, as confirmed by the user for this fork. The footage reader
-recognizes that layout. Use Le Trou without forcing overclock;
-accept corrosion and do not reset because of Charm. Wait until Faelantern emerges
-before choosing Boucher un trou. EGO-menu transitions are verified directly;
-the sword overlay during a held click is not treated as proof of Charm. If it survives that use,
-select Damage. On floor 4, optional meatshields must not attack.
-Choose no HP increase or the lowest HP trial available throughout the run.
+Faelantern on floor 3 fields Mao Faust solo. Use Win Rate until the emerged
+state is recognized, then hold Le Trou to select Hollow corrosion. Surviving
+Faelantern uses Damage. EGO selection holds Faust's leftmost recognized slot.
 
-The bot uses existing image recognition for pack names and floor numbers. Missing
-required packs trigger available refreshes, then a checkpoint for manual Pack
-Search. It never chooses a substitute pack. It verifies the difficulty toggle
-before choosing. Map routing prefers safer recognized paths, permits unavoidable risky paths,
-and uses the existing map fallback for unknown nodes. Recognition can still fail; this
-draft needs observed gameplay validation before unattended use.
+Pack selection now checks the required offered title first. If absent, it opens
+Pack Search, chooses a replacement slot, scrolls the search list, and buys the
+exact target only after the confirmation names it. It then verifies the replaced
+card before pulling it. Floors 1–4 stay Normal; floor 5 switches to Hard for Line 2.
+Missing or unselectable targets stop without purchasing a substitute.
+
+Whole-path routing prefers safer recognized paths, permits unavoidable risky
+paths, and uses the existing map fallback for unknown nodes. Live Windows
+validation is still required.
 
 ## Early Hollow overclock
 
@@ -131,13 +129,8 @@ without usage history stops rather than guessing whether EGO was used.
   no separate confirmation. The handler redeploys Faust if selection appears and
   waits for verified turn 1 before clearing EGO usage. At most three retries are
   attempted; timeouts never repeat the retry click.
-- Faelantern: Le Trou, accept corrosion, do not reset for Charm. Wait through an
-  underground turn using Damage in the calibrated solo layout;
-  use Boucher once emerged and selectable. After Boucher, surviving enemies use
-  Damage. Deployment selects Faust solo. The wiki documents that Charm is not
-  applied with only one Sinner present. A greyed portrait with an assigned skill
-  is the user-specified Charm cue; the sword shown while holding a portrait is
-  not treated as Charm. No Charm-triggered retry is used.
+- Faelantern: Win Rate until emerged and selectable, then Hollow corrosion.
+  Surviving enemies use Damage. Charm does not cause a retry.
 - Other supported solo fights: after overclock Hollow or Boucher, surviving enemies
   use Win Rate. Ordinary later-floor solo encounters now select Awakening.
 - Sign of Roses: Le Trou on turn 1; Boucher on turn 2. Before starting, require
@@ -284,9 +277,8 @@ The generic blind click-recovery function is not used for unknown combat.
 
 Nine new checks cover actual runtime dispatch to shared handlers, preferences,
 run counts, failure limits, Stop, connection retries and HP ranking. The complete
-Windows run still needs testing. Pack Search after exhausted refreshes has no
-existing upstream implementation to reuse and remains a checkpoint. Unrecognized
-combat interfaces and unsuccessful map entry still produce checkpoints. No full AFK certification is claimed.
+Windows run still needs testing. Pack Search now uses the supplied layouts. Unrecognized combat interfaces and
+unsuccessful map entry still produce checkpoints. No full AFK certification is claimed.
 
 ## Unavoidable encounter update
 
@@ -297,3 +289,13 @@ controller; surviving ordinary enemies use Win Rate. Known bosses encountered
 through an unknown node keep their specific handling, including Faelantern's
 Damage fallback and KoD turn-3 retry. Unknown combat UI still requires recognition
 before inputs. A map fallback that cannot actually enter a node still stops.
+
+## Pack Search update
+
+Exact targets are Flat-broke Gamblers, Hell's Chicken, To be Cleaved, Hatred and
+Despair, and Hard Line 2, in floor order. Existing win-screen rewards, repeat runs,
+and the configured enkephalin-module setting continue through shared handlers.
+
+Validation: 122 checks passed with 24 external-capture checks skipped. The new
+Pack Search screenshot check was enabled, and all 13 early Hollow checks also
+passed separately with their original screenshots. Windows inputs remain untested.
