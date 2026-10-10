@@ -110,7 +110,7 @@ def combat(number, boss=False, faelantern=False, turn=1):
 
 def protected_gifts(number):
     floor_plan(number)
-    gifts = {"Sharp Needles & Threads", "Cigarette Holder", "Fragment of Conceit",
+    gifts = {"Sharp Needles & Threads", "Fragment of Conceit",
              "Fragment of Decay", "Clear Mirror, Calm Water", "Artistic Sense"}
     if number == 1:
         gifts.add("Grand Welcome")

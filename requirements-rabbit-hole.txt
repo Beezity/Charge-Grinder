@@ -1,0 +1,4 @@
+# Fresh Python 3.11/3.12 environment. RapidOCR supplies OpenCV and CPU models.
+numpy
+PySide6
+rapidocr-onnxruntime==1.4.4

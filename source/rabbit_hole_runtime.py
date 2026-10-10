@@ -1,4 +1,4 @@
-"""Assisted calibration runtime. Never falls back to upstream combat/shop logic."""
+"""Rabbit Hole runtime. Uses its own verified combat and shop controllers."""
 from pathlib import Path
 from datetime import datetime
 
@@ -66,7 +66,8 @@ def run():
         elif now_rgb.button("winrate") or now.button("pause"):
             checkpoint("combat")
         elif now.button("shop") or now.button("supershop"):
-            checkpoint("shop")
+            from source.rabbit_hole_shop_adapter import run_windows_shop
+            run_windows_shop()
         elif now.button("EGObin") or now.button("encounterreward"):
             checkpoint("reward")
         elif now_rgb.button("event"):

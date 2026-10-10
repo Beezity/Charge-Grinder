@@ -20,7 +20,7 @@ def main():
     import source.utils.params as p
     p.RABBIT_HOLE = True
     p.LVL = args.floor
-    print("Rabbit Hole draft: early overclock implemented; Awakening, bosses, shops and setup remain manual.")
+    print("Rabbit Hole draft: early overclock and shop adapter implemented; Awakening, bosses and setup remain manual.")
     runpy.run_path("App.py", run_name="__main__")
 
 

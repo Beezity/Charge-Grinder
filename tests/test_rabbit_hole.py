@@ -171,10 +171,13 @@ class RuntimeTests(unittest.TestCase):
                                               "source.move": move_stub}), \
                      patch("source.rabbit_hole_runtime.try_first_turn", return_value=False), \
                      patch("source.rabbit_hole_runtime.deploy", side_effect=lambda: __import__('source.rabbit_hole_runtime', fromlist=['checkpoint']).checkpoint('combat')), \
+                     patch("source.rabbit_hole_shop_adapter.run_windows_shop", side_effect=lambda: __import__('source.rabbit_hole_runtime', fromlist=['checkpoint']).checkpoint('shop')) as shop_run, \
                      patch("source.rabbit_hole_runtime.checkpoint", side_effect=CheckpointRequired) as stop:
                     with self.assertRaises(CheckpointRequired):
                         run()
                     self.assertEqual(stop.call_args.args[0], stage)
+                    if visible == "shop": shop_run.assert_called_once()
+                    else: shop_run.assert_not_called()
                     move_stub.move.assert_not_called()
                     pack_stub.pack.assert_not_called()
 

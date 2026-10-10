@@ -47,6 +47,8 @@ class Fusion:
     ingredients: tuple[str, ...]
     cost: int = 0
     verified: bool = False
+    # Keyword fusion forecasts a tier/keyword, not an exact resulting gift.
+    random_result: bool = False
 
 
 @dataclass(frozen=True)
@@ -66,6 +68,7 @@ class Action:
     name: str = ""
     cost: int = 0
     ingredients: tuple[str, ...] = ()
+    random_result: bool = False
 
 
 def remaining_upgrade_cost(level: int) -> int:
@@ -80,7 +83,8 @@ def floor4_reserve(state: ShopState) -> int:
     cost = sum(remaining_upgrade_cost(state.owned.get(name, 0))
                for name in UPGRADE_GOALS)
     if state.sp.get("Faust", -1) < 45:
-        cost += SP_HEAL_COST
+        sp = state.sp.get("Faust", 0)
+        cost += SP_HEAL_COST * (2 if sp < 0 else 1)
     return cost
 
 
@@ -168,7 +172,7 @@ def next_action(floor: int, state: ShopState, *, completed=frozenset(),
                     return action
         for recipe in state.fusions:
             if recipe.result == name and allowed_fusion(recipe, state):
-                action = eligible(Action("fuse", name, recipe.cost, recipe.ingredients))
+                action = eligible(Action("fuse", name, recipe.cost, recipe.ingredients, recipe.random_result))
                 if action:
                     return action
 

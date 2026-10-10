@@ -6,20 +6,25 @@ Strategy source: [Rabbit Hole, updated 8 October 2026](https://docs.google.com/s
 
 **This draft does not automate a complete run.** It adds strict pack selection,
 the floor-5 difficulty switch, conservative map navigation, early first-turn
-Hollow overclock and manual checkpoints. Awakening, focused/boss targeting,
-SP healing, shops, fusion, gifts, trials, events, startup and reward collection
-still require manual action.
+Hollow overclock and manual checkpoints.
+The shop adapter now handles purchases, sales, fusion, upgrades and SP healing
+with visual verification. Gifts, trials, events, startup, later combat and reward
+collection still require manual action. Shop inputs await live Windows validation.
 Windows input and live recognition have not been tested in this environment.
 
 ## Windows setup
 
 Extract the full ZIP into a new folder. This is Python source, not a prebuilt EXE.
-Use 64-bit Python 3.11 or newer. In that folder:
+Use 64-bit Python **3.11 or 3.12** for the shop OCR dependency. In that folder:
 
 ```powershell
-py -m venv .venv
-.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+py -3.12 -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r requirements-rabbit-hole.txt
 ```
+
+Use a fresh virtual environment: the Rabbit Hole requirements include OpenCV
+through RapidOCR, and should not be mixed with a separate OpenCV-headless install.
+OCR runs locally using bundled CPU models; no cloud OCR account is required.
 
 The current upstream Windows input bridge and its startup checks are retained.
 If your existing Charge-Grinder setup cannot initialize that bridge, this draft
@@ -53,7 +58,7 @@ title before starting; the keyword alone does not enable Rabbit Hole.
 
 ## Route and decisions
 
-| Floor | Difficulty | Required pack | Combat and shop plan (manual) |
+| Floor | Difficulty | Required pack | Combat and shop strategy |
 | --- | --- | --- | --- |
 | 1 | Normal | Flat-broke Gamblers | Solo Faust, overclock Hollow. Buy T2/T3 material. SP-heal a non-Faust event-check ID to 45. |
 | 2 | Normal | Hell's Chicken | Overclock Hollow. Buy T2/T3 material and fuse Fragment of Conceit. Grand Welcome can be consumed now. Keep CMCW unupgraded. |
@@ -102,32 +107,45 @@ Provide original 1920×1080 screenshots, or preferably a short video, showing:
 1. The turn-2 Awakening form, Boucher un trou, and its target indicators.
 2. Focused-encounter skill selection with Hollow open and selected.
 3. Later: Faelantern charm/emergence, KoD after turn 2, and Sign of Roses with all
-   three parts highlighted; shop SP-healing and the relevant gift screens.
+   three parts highlighted. The two supplied shop recordings are now calibrated.
 
 Checkpoint screenshots are local only; the draft does not upload them.
 
 ## Validation
 
 ```powershell
-py -m unittest discover -s tests -v
+.\.venv\Scripts\python.exe -m unittest discover -s tests -v
 ```
 
-36 tests pass locally: 31 policy/controller/settings tests plus 5 screenshot tests
-replaying the supplied images and modified negative cases. Set `RABBIT_CAPTURE_DIR`
-to the directory containing the original `codex-clipboard-*.png` files to run those
-5 tests; they are skipped when captures are absent. Only small recognition patches
-are distributed in `source/rabbit_hole_assets.json`, not the original screenshots.
-Desktop input is mocked; these tests do not establish live input timing or clear time.
-Python syntax checks also pass. Upstream GPL-3.0 licensing is preserved.
+**68 tests pass locally**, including policy/controller/settings tests, five supplied combat
+screenshot cases, and eight shop video replay tests. To include the originals:
 
-## Milestone 3 — shop economy policy (planning and tests only)
+```powershell
+$env:RABBIT_CAPTURE_DIR = "C:\path\to\combat-screenshots"
+$env:RABBIT_SHOP_VIDEO_DIR = "C:\path\to\OBS Recordings"
+.\.venv\Scripts\python.exe -m unittest discover -s tests -v
+```
+
+Original videos are not distributed. The replay reads the filenames
+`2026-10-10 09-19-07.mp4` and `2026-10-10 09-21-37.mp4`.
+Desktop input is mocked; passing replay tests does not prove Windows click timing,
+complete inventory traversal or AFK readiness. Upstream GPL-3.0 is preserved.
+
+## Milestone 3 — connected shop adapter, Windows validation pending
 
 The new `source/rabbit_hole_shop_policy.py` makes deterministic shop decisions
 from *verified* state, and `source/rabbit_hole_shop_controller.py` checks that
 each transaction visibly changes inventory, SP, or currency before continuing.
-**They are not connected to the desktop UI yet.** The current runtime still
-stops at the manual shop checkpoint. Do not run upstream `source.shop.sell()`
-in Rabbit Hole mode: its tier-only choice can sell required gifts.
+**The runtime now calls `WindowsShopAdapter` at shops.** It reads the shelf and
+inventory, executes the chosen action, verifies the transaction, and leaves when
+no eligible action remains. It does not call upstream tier-only selling.
+
+Inventory observation opens and cancels sale dialogs to read exact item names and
+prices, scrolls to the end, and checks target enhancement levels separately. The
+floor-1 event-check sinner is Yi Sang, matching the supplied recording. Unknown
+text, ambiguous protected names, unsupported SP readings or failed transitions
+still produce a diagnostic checkpoint. The recordings support the displayed
+layout, not every possible gift or SP value; live Windows testing is still needed.
 
 * Sell an identified, unprotected gift **only when a specific pending action
   costs more than available currency**. Prefer other spare gifts before
@@ -141,16 +159,32 @@ in Rabbit Hole mode: its tier-only choice can sell required gifts.
   Restore Faust to 45 SP **only at the floor-4 shop**, never at floors 2/3/5.
 * A tier-IV gift costs **300 currency from base to ++** (100 then 200).
   Clear Mirror, Calm Water++ plus Artistic Sense++ require up to 600,
-  plus 100 for floor-4 Faust SP healing when needed. Recalculate from current
-  upgrades and SP instead of spending 700 unconditionally.
+  plus 100 per floor-4 Faust treatment when needed. The recorded option adds
+  45 SP, so negative starting SP can require two treatments: up to 800 total
+  for both base-to-++ upgrades and healing. Verify each result and recompute.
 * Floors 1–3 prioritize tier-II/III materials and Fragment of Conceit;
   floor 4 prioritizes essential gifts and upgrades, without consuming protected
   ingredients.
 
-Run the added tests with `py -m unittest discover -s tests -v`.
-The shop policy/controller passed 14 isolated local tests; this does **not**
-validate any Windows clicks or enable autonomous transactions.
+The adapter can make one keyword-fusion attempt per missing target per visit,
+using three identified unprotected ingredients whose tier points total at least
+25. It requires a visible guaranteed tier-IV forecast and 90% intended-keyword
+chance, with Wishmaking off. All three ingredient icons are checked again on
+confirmation. The resulting gift is read and checked against consumed ingredients;
+a different verified result is not treated as a failed transaction. The policy
+then continues with available gifts. No refresh or Starlight spending is added.
 
-Before enabling live shop automation, implement and validate a Windows adapter
-that supplies confidently identified gift names, exact upgrade levels, SP,
-currency and visible offers, and verifies sale/fusion confirmation screens.
+The controller verifies exact currency changes and inventory differences. Healing
+can repeat only after a verified 45-SP gain, until the intended sinner reaches
++45 or no affordable action remains. Transactions are never retried blindly.
+
+## Remaining milestones after the shop
+
+1. Finish Awakening, turn 2, focused combat, Faelantern, Knight of Despair retries,
+   and Sign of Roses targeting.
+2. Automate startup, gifts, events, trials, pack search, rewards and transitions.
+3. Add bounded recovery, restart/repeat runs and resource/stop conditions.
+4. Validate complete and repeated AFK runs on Windows.
+
+The intended final mode is autonomous. Current checkpoints mark unfinished or
+unrecognized behavior; this build is still a calibration draft.

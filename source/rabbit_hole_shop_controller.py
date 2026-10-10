@@ -14,17 +14,29 @@ class ShopReport:
     missing: tuple[str, ...]
 
 
-def _changed(action: Action, before: ShopState, after: ShopState) -> bool:
+def _changed(action: Action, before: ShopState, after: ShopState, *, fusion_result=None) -> bool:
+    before_names, after_names = set(before.owned), set(after.owned)
+    added, removed = after_names-before_names, before_names-after_names
     if action.kind == "sell":
-        return action.name not in after.owned and after.currency > before.currency
+        price = next((s.price for s in before.sales if s.name == action.name and s.verified), None)
+        return (removed == {action.name} and not added and price is not None
+                and after.currency-before.currency == price)
     if action.kind == "buy":
-        return action.name in after.owned and action.name not in before.owned
+        return (added == {action.name} and not removed
+                and before.currency-after.currency == action.cost)
     if action.kind == "upgrade":
-        return after.owned.get(action.name, -1) > before.owned.get(action.name, -1)
+        return (not added and not removed and before.currency-after.currency == action.cost
+                and after.owned.get(action.name, -1) == before.owned.get(action.name, -1)+1)
     if action.kind == "heal":
-        return after.sp.get(action.name, -1) >= 45 and before.sp.get(action.name, -1) < 45
+        old = before.sp.get(action.name)
+        return (old is not None and old < 45 and not added and not removed
+                and before.currency-after.currency == action.cost
+                and after.sp.get(action.name) == min(45, old+45))
     if action.kind == "fuse":
-        return action.name in after.owned and action.name not in before.owned
+        result = fusion_result if action.random_result else action.name
+        return (result is not None and added == {result}
+                and removed == set(action.ingredients)
+                and before.currency-after.currency == action.cost)
     return False
 
 
@@ -58,10 +70,11 @@ def run_shop(floor, adapter, *, max_actions=25):
         if not adapter.execute(action):
             raise CheckpointRequired(f"Could not verify {action.kind} {action.name}; review shop manually.")
         after = adapter.observe()
-        if not isinstance(after, ShopState) or not _changed(action, before, after):
+        if not isinstance(after, ShopState) or not _changed(action, before, after, fusion_result=getattr(adapter, "last_fusion_result", None)):
             raise CheckpointRequired(f"{action.kind} {action.name} was not visibly confirmed; no retry.")
         actions.append(action)
-        attempted.add(key)
+        if action.kind != "heal" or after.sp.get(action.name, -45) >= 45:
+            attempted.add(key)
         if action.kind == "buy" and action.name not in {
                 "Fragment of Conceit", "Fragment of Decay",
                 "Clear Mirror, Calm Water", "Artistic Sense"}:
