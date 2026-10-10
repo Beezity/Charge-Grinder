@@ -11,8 +11,9 @@ The shop adapter now handles purchases, sales, fusion, upgrades and SP healing
 with visual verification. The new solo combat controller selects Le Trou and Boucher
 un trou, resets KoD at turn 3, verifies Roses attack-weight targets, and applies
 Win Rate/Damage fallbacks. Gifts, trials,
-events, startup, unrecognized combat and reward collection still require manual
-action. Shop and combat inputs await live Windows validation.
+events, unrecognized combat and reward collection still require manual
+action. MD entry, preset selection and graces reuse the upstream startup flow;
+starting gifts now use the calibrated free-starter and gift-search sequence. Shop and combat inputs await live Windows validation.
 Windows input and live recognition have not been tested in this environment.
 
 ## Windows setup
@@ -46,10 +47,16 @@ Prepare the correct Mao Faust team manually. For eligible early encounters the
 runtime deploys Faust alone using upstream selection, including the confirmed
 solo Faelantern configuration.
 
-Manually start Normal with level 60+ UT3+ Mao Faust and only Hollow equipped
-(TS3+, TS4 preferred). Select graces 1 and 3 and two Gift Searches; obtain
-Cigarette Holder, Grand Welcome and Sharp Needles & Threads. The guide estimates
-about 21 Starlight lost per run. Start automation at the pack or map screen.
+Prepare a level 60+ UT3+ Mao Faust preset with only Hollow equipped
+(TS3+, TS4 preferred). Start automation from the home/Drive/MD entry screen
+with floor 1 selected, or resume at a pack/map screen with the current floor.
+The existing MD startup flow selects the Rupture preset and graces 1 and 3.
+It enables Gift Search like Arayashu, takes Cigarette Holder from Poise, then
+selects Grand Welcome and Sharp Needle & Thread on the Keywordless search tab.
+Before purchasing, it verifies both selected names, exactly two gifts and the
+160-Starlight total, then verifies the confirmation dialog and enters the dungeon.
+The guide estimates about 21 Starlight lost per run. The draft does not configure
+identities/EGO. Windows timing still needs live validation.
 
 At each checkpoint automation stops and saves a screenshot under
 `data/rabbit-hole/`. Read the instruction, complete the step manually, then start
@@ -230,3 +237,25 @@ can repeat only after a verified 45-SP gain, until the intended sinner reaches
 
 The intended final mode is autonomous. Current checkpoints mark unfinished or
 unrecognized behavior; this build is still a calibration draft.
+
+## Startup integration update
+
+Rabbit Hole calls the same `Bot.dungeon_start` and `select_grace` functions as
+normal MD, starting outside the dungeon with floor 1 selected. It uses the
+prepared Rupture preset. Its callback replaces the ordinary affinity gifts with
+Cigarette Holder followed by two Keywordless searches: Grand Welcome (70
+Starlight) and Sharp Needle & Thread (90). It verifies list entries, selection
+count, total cost and the confirmation dialog; hovered icons do not prove
+selection. Unexpected selections stop before purchase. Input is guarded by
+focus/Stop checks, and transitions are bounded without repeated purchases.
+
+The shared team-confirmation handler still tries the existing ConfirmInvert
+recognizer first. A new specific underlevel-message template supports the
+supplied popup when the old button template does not match. This applies to
+normal MD startup too; Rabbit Hole has no separate popup handler.
+
+Fourteen startup tests cover shared navigation, strategy defaults, warning
+handling, exact gift selection, cost mismatch, missing gifts, and replay of the
+eight supplied screenshots. Enable those three screenshot replay tests with
+`RABBIT_STARTUP_CAPTURE_DIR` pointing to the original PNG folder. Originals are
+not bundled. Actual Windows clicks and transition timing await validation.

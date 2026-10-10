@@ -292,7 +292,7 @@ class MyApp(QWidget):
         add_button("hos_mode", "Arayashu", self.config, (244, 82, 192, 28), 13, self.update_button_icons, checkable=True)
         add_button("rabbit_hole_mode", "Rabbit Hole (Rupture)", self.config, (444, 82, 212, 28), 13, self.update_button_icons, checkable=True)
         self.rabbit_hole_mode.setChecked(p.RABBIT_HOLE)
-        self.rabbit_hole_mode.setToolTip("Mao Faust draft; Rupture first keyword. Early single-slot overclock is automated. Awakening, bosses and shops need manual steps.")
+        self.rabbit_hole_mode.setToolTip("Mao Faust draft; Rupture first keyword. MD entry, preset selection, graces, starting gifts, calibrated combat and shops are connected. Windows validation and remaining progression are pending.")
 
         self.webhook_panel = QFrame(self.config)
         self.webhook_panel.setGeometry(24, 104, 652, 560)

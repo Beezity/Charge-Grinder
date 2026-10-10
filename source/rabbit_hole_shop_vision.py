@@ -19,6 +19,8 @@ def key(text):
 
 CANONICAL = {key(n): n for n in PROTECTED | {'Cigarette Holder', 'Grand Welcome'}}
 CANONICAL['sharpneedlesandthreads'] = 'Sharp Needles & Threads'
+CANONICAL['sharpneedlethread'] = 'Sharp Needles & Threads'
+CANONICAL['sharpneedleandthread'] = 'Sharp Needles & Threads'
 
 
 def gift_name(text):

@@ -24,6 +24,7 @@ start_locations = {
     "MD": 1,
     "Start": 2,
     "enterInvert": 5,
+    "underleveled": 8,
     "ConfirmTeam": 6,
     "enterBonus": 12,
     "Confirm.0": 15,
@@ -40,7 +41,20 @@ def select_grace():
             if p.BUFF[i] > 1:
                 ClickAction((x + 60*(1 - 2*(p.BUFF[i] < 3)), y + 155), ver="money!").execute(try_click)
 
-def dungeon_start():
+def confirm_team_warning():
+    # Existing confirmation first; the supplied underlevel popup has a newer
+    # button appearance. Match its message before using its confirm coordinate.
+    if now_click.button("ConfirmInvert"):
+        return
+    if now.button("underleveled"):
+        if p.LIMBUS_NAME not in (window := gui.getActiveWindowTitle()):
+            pause(window)
+        win_click(1149, 743)
+        if not wait_while_condition(lambda: now.button("underleveled"), timer=8):
+            raise RuntimeError("Underleveled team confirmation did not close")
+
+
+def dungeon_start(starting_gifts=None):
     ACTIONS = [
         Action("Drive"),
         Action("MD", ver="Start"),
@@ -51,7 +65,7 @@ def dungeon_start():
         select_team,
         lambda: try_click.button("ConfirmTeam"),
         lambda: time.sleep(0.5),
-        lambda: now_click.button("ConfirmInvert"),
+        confirm_team_warning,
         lambda: wait_while_condition(lambda: not now.button("enterBonus")),
         lambda: time.sleep(0.2),
 
@@ -65,7 +79,11 @@ def dungeon_start():
 
     ]
 
-    if p.HOS_MODE is False:
+    if starting_gifts is not None:
+        # Keep the upstream navigation, preset and grace actions. Rabbit Hole
+        # supplies its own gift step instead of the ordinary affinity defaults.
+        ACTIONS.append(starting_gifts)
+    elif p.HOS_MODE is False:
         ACTIONS.extend([
             lambda: now_click.button("giftSearchOn"),
             ClickAction(p.GIFTS[0]["checks"][2], ver="gifts!"),
@@ -114,6 +132,8 @@ def dungeon_start():
             else: break
             try:
                 chain_actions(try_click, ACTIONS[i:])
+                if starting_gifts is not None:
+                    return
             except RuntimeError:
                 failed += 1
                 win_moveTo(1509, 978)
@@ -436,7 +456,7 @@ def execute_me(count, count_exp, count_thd, teams, settings, hard, app, warning)
                 raise ValueError("Rabbit Hole calibration currently requires a 1920x1080 game client.")
             p.HARD = floor_plan(p.LVL).hard
             p.SELECTED = ["FAUST"]
-            # The manually prepared run must use graces 1 and 3 as documented.
+            # These are consumed by the shared dungeon_start/select_grace flow.
             p.BUFF = [1, 0, 1, 0, 0, 0, 0, 0, 0, 0]
             main_loop()
             return

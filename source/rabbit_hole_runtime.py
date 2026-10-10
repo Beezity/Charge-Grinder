@@ -67,6 +67,7 @@ def run():
     from source.utils.utils import p, now, now_rgb, time, gui, pause, StopExecution
     from source.pack import pack
     from source.move import move
+    from source.rabbit_hole_startup import is_startup, enter_dungeon
 
     while not p.stop_event.is_set():
         if p.LIMBUS_NAME not in (window := gui.getActiveWindowTitle()):
@@ -103,6 +104,9 @@ def run():
                 time.sleep(0.5)
             else:
                 checkpoint("loading", "Loading did not finish within 30 seconds.")
+        elif is_startup(now):
+            from Bot import dungeon_start
+            enter_dungeon(dungeon_start, p, checkpoint)
         else:
             checkpoint("setup" if p.LVL == 1 else "unknown")
         time.sleep(0.2)

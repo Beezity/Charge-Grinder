@@ -20,7 +20,7 @@ def main():
     import source.utils.params as p
     p.RABBIT_HOLE = True
     p.LVL = args.floor
-    print("Rabbit Hole draft: early overclock and shop adapter implemented; Awakening, bosses and setup remain manual.")
+    print("Rabbit Hole draft: MD entry, preset, graces, starting gifts, shops and calibrated combat are connected. Windows validation and remaining progression are pending.")
     runpy.run_path("App.py", run_name="__main__")
 
 

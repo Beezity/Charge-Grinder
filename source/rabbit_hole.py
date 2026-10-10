@@ -47,12 +47,12 @@ FLOORS = {
 }
 
 SETUP = (
-    "Start a NORMAL run manually with Mao Faust, level 60+, UT3+; equip only Hollow "
-    "(TS3+, preferably TS4). Select graces 1 and 3 and two Gift Searches. "
+    "Start outside Mirror Dungeon on floor 1 with Mao Faust, level 60+, UT3+; equip only Hollow "
+    "(TS3+, preferably TS4). The startup selects graces 1 and 3 and two Gift Searches. "
     "Start with Cigarette Holder, Grand Welcome and Sharp Needles & Threads. "
     "Field only Faust; bench IDs can rotate for rest bonus. "
     "The guide estimates about -21 Starlight per run. "
-    "Resume this draft at the pack-selection or map screen."
+    "Use the prepared Rupture preset with only Le Trou/Hollow equipped."
 )
 
 
