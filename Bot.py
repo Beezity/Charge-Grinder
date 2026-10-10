@@ -458,7 +458,13 @@ def execute_me(count, count_exp, count_thd, teams, settings, hard, app, warning)
             p.SELECTED = ["FAUST"]
             # These are consumed by the shared dungeon_start/select_grace flow.
             p.BUFF = [1, 0, 1, 0, 0, 0, 0, 0, 0, 0]
-            main_loop()
+            from source.rabbit_hole_progression import configure_rewards, repeat_runs
+            configure_rewards(p, TEAMS, settings['keywordless'])
+            repeat_runs(main_loop, p, count, check_enkephalin if p.NETZACH else None)
+            if p.ALTF4:
+                close_limbus()
+            if p.APP:
+                QMetaObject.invokeMethod(p.APP, "stop_execution", Qt.ConnectionType.QueuedConnection)
             return
         lux_keys = [key for key in teams.keys() if key >= 7]
         team_keys = [key for key in teams.keys() if key < 7]

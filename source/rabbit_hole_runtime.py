@@ -68,12 +68,23 @@ def run():
     from source.pack import pack
     from source.move import move
     from source.rabbit_hole_startup import is_startup, enter_dungeon
+    from source.event import event
+    from source.grab import grab_EGO, grab_card, confirm
 
     while not p.stop_event.is_set():
         if p.LIMBUS_NAME not in (window := gui.getActiveWindowTitle()):
             pause(window)
             continue
-        if now.button("PackChoice"):
+        if now.button("ServerError"):
+            from source.utils import utils
+            from source.rabbit_hole_progression import recover_connection
+            recover_connection(utils, checkpoint)
+        elif now.button("EventEffect"):
+            from source.utils.utils import win_click
+            win_click(773, 521)
+            time.sleep(.2)
+            win_click(967, 774)
+        elif now.button("PackChoice"):
             pack()
         elif now.button("TOBATTLE"):
             deploy()
@@ -85,15 +96,29 @@ def run():
             from source.rabbit_hole_shop_adapter import run_windows_shop
             run_windows_shop()
         elif now.button("EGObin") or now.button("encounterreward"):
-            checkpoint("reward")
+            if not (grab_EGO() or grab_card()):
+                checkpoint("reward", "The shared reward handler could not select a recognized reward.")
+            confirm()
         elif now_rgb.button("event"):
-            checkpoint("event")
-        elif now.button("victory") or now.button("defeat"):
-            checkpoint("finish", "Run ended. Collect rewards manually. Relaunch with floor 1 for a new run.")
+            # Shared events may lead to ordinary combat instead of the map.
+            p.RABBIT_NODE = "Normal"
+            if not event():
+                checkpoint("event", "The shared event handler did not complete within its time limit.")
+        elif now.button("victory"):
+            from Bot import dungeon_end
+            if not dungeon_end():
+                checkpoint("finish", "The shared end-of-run reward handler did not finish.")
+            return True
+        elif now.button("defeat"):
+            from Bot import dungeon_fail
+            if not dungeon_fail():
+                checkpoint("finish", "The shared defeat handler did not return to the home screen.")
+            return False
         elif now.button("Move"):
             p.HARD = floor_plan(p.LVL).hard
             if not move():
-                checkpoint("route")
+                if now.button("Move"):
+                    checkpoint("route")
         elif now.button("loading") or now.button("connecting"):
             # Bounded wait; unknown/transitional screens never reach click recovery.
             for _ in range(60):
@@ -107,6 +132,8 @@ def run():
         elif is_startup(now):
             from Bot import dungeon_start
             enter_dungeon(dungeon_start, p, checkpoint)
+        elif confirm():
+            pass
         else:
             checkpoint("setup" if p.LVL == 1 else "unknown")
         time.sleep(0.2)

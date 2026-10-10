@@ -215,9 +215,6 @@ def move():
     p.DEAD = len([gui.center(box) for box in LocateRGB.locate_all(PTH["0"], region=REG["alldead"], conf=0.9, threshold=40)])
     print(f"{p.DEAD} dead sinners")
     if p.DEAD == 12:
-        if p.RABBIT_HOLE:
-            from source.rabbit_hole_runtime import checkpoint
-            checkpoint("defeat", "All sinners appear defeated. Review the run manually.")
         gui.press("esc")
         time.sleep(0.5)
         chain_actions(click, [

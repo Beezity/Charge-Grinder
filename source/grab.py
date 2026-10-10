@@ -107,12 +107,20 @@ def find_trial(trials_image):
     Returns:
         res: list of matching bounding boxes
     '''
-    for name in mounting_trials:
+    priorities = mounting_trials
+    if p.RABBIT_HOLE:
+        priorities = [name for name in mounting_trials if name not in ('BodyUp','Growth','Resilient')]
+    for name in priorities:
         for c in [1, 1.05]:
             res = LocateRGB.locate_all(PTH[f"trial_{name}"], trials_image, method=cv2.TM_SQDIFF_NORMED, comp=c, conf=0.87, threshold=100)
             if res:
                 print(name)
                 return res
+    if p.RABBIT_HOLE:
+        from source.rabbit_hole_trials import read_lowest_hp
+        match = read_lowest_hp(trials_image)
+        if match:
+            return [match]
     return []
 
 
@@ -144,6 +152,9 @@ def get_trial(image, trials_image):
         mask = rectangle(mask, (int(points[1][0]-140), 0), (int(points[1][0]+140), 110), 255, -1)
         return cv2.bitwise_and(image, image, mask=mask), None
     else:
+        if p.RABBIT_HOLE:
+            from source.rabbit_hole_runtime import checkpoint
+            checkpoint('trial', 'No non-HP trial or confidently readable HP percentage was recognized.')
         return image, None
 
 
@@ -162,9 +173,14 @@ def grab_EGO():
 
     cycle = 1
     trials = None
-    if p.HARD and now.button("trials"): 
-        cycle = 2
-        if p.EXTREME:
+    if (p.HARD or p.RABBIT_HOLE) and now.button("trials"):
+        cycle = 2 if p.HARD else 1
+        if p.RABBIT_HOLE:
+            for i in (2, 3):
+                if now.button(f"select{i}", "selectCount"):
+                    cycle = i
+                    break
+        if p.EXTREME or p.RABBIT_HOLE:
             trials = screenshot(region=REG["buffs"])
             # cv2.imwrite(f"data/trials/{time.time()}.png", trials)
     elif p.BUFF[9] or p.BUFF[5]:

@@ -167,8 +167,15 @@ class RuntimeTests(unittest.TestCase):
                 pack_stub.pack = Mock()
                 move_stub = types.ModuleType("source.move")
                 move_stub.move = Mock()
+                event_stub = types.ModuleType("source.event")
+                event_stub.event = Mock(return_value=False)
+                grab_stub = types.ModuleType("source.grab")
+                grab_stub.grab_EGO = grab_stub.grab_card = grab_stub.confirm = Mock(return_value=False)
+                bot_stub = types.ModuleType("Bot")
+                bot_stub.dungeon_end = bot_stub.dungeon_fail = Mock(return_value=False)
                 with patch.dict(sys.modules, {"source.utils.utils": stub, "source.pack": pack_stub,
-                                              "source.move": move_stub}), \
+                                              "source.move": move_stub, "source.event": event_stub,
+                                              "source.grab": grab_stub, "Bot": bot_stub}), \
                      patch("source.rabbit_hole_runtime.try_first_turn", return_value=False), \
                      patch("source.rabbit_hole_runtime.deploy", side_effect=lambda: __import__('source.rabbit_hole_runtime', fromlist=['checkpoint']).checkpoint('combat')), \
                      patch("source.rabbit_hole_shop_adapter.run_windows_shop", side_effect=lambda: __import__('source.rabbit_hole_runtime', fromlist=['checkpoint']).checkpoint('shop')) as shop_run, \

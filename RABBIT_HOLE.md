@@ -11,8 +11,8 @@ The shop adapter now handles purchases, sales, fusion, upgrades and SP healing
 with visual verification. The new solo combat controller selects Le Trou and Boucher
 un trou, resets KoD at turn 3, verifies Roses attack-weight targets, and applies
 Win Rate/Damage fallbacks. Gifts, trials,
-events, unrecognized combat and reward collection still require manual
-action. MD entry, preset selection and graces reuse the upstream startup flow;
+unrecognized combat, unrecognized trials and unavailable exact packs still require manual
+action. Shared event, gift/card reward, end-of-run and defeat handlers are connected. MD entry, preset selection and graces reuse the upstream startup flow;
 starting gifts now use the calibrated free-starter and gift-search sequence. Shop and combat inputs await live Windows validation.
 Windows input and live recognition have not been tested in this environment.
 
@@ -62,7 +62,10 @@ At each checkpoint automation stops and saves a screenshot under
 `data/rabbit-hole/`. Read the instruction, complete the step manually, then start
 again in the same app. The last recognized floor is retained in that app session.
 Each start asks for the current floor, so correct it if you changed floors
-manually or started a new run. The draft does not collect rewards or repeat runs.
+manually or started a new run. The app run count controls repeated runs. Successful runs use the shared reward
+collection flow; failed runs use the shared defeat flow and respect Restart.
+Three consecutive failed runs stop automation. Enkephalin checks use the existing
+setting and handler. New runs reset to floor 1 and repeat the prepared startup.
 
 Launching `App.py` uses the saved Rabbit Hole toggle. Check the toggle and window
 title before starting; the keyword alone does not enable Rabbit Hole.
@@ -259,3 +262,28 @@ handling, exact gift selection, cost mismatch, missing gifts, and replay of the
 eight supplied screenshots. Enable those three screenshot replay tests with
 `RABBIT_STARTUP_CAPTURE_DIR` pointing to the original PNG folder. Originals are
 not bundled. Actual Windows clicks and transition timing await validation.
+
+## Shared progression update
+
+Rabbit Hole now calls the existing event, EGO gift, reward-card, confirmation,
+victory/reward collection and defeat handlers. Reward priorities are initialized
+with Rupture, Poise and Sinking gifts and relevant Keywordless preferences,
+without changing the Rupture preset tag. Events that start fights lead into the
+ordinary solo combat controller. Floor-number recognition, difficulty switching
+and exact route selection remain in the shared pack handler.
+
+Trials use the existing recognition and gift/trial selection code, preferring
+recognized non-HP options. If those are absent, local OCR selects the lowest
+confidently readable positive HP percentage. Ambiguous or missing percentages
+stop rather than selecting an arbitrary penalty. The OCR fallback needs live
+trial-screen validation. Normal non-Rabbit trial behavior is unchanged.
+
+Recognized server-error dialogs receive at most three retries. Loading waits
+and run failures are bounded. Existing resource exhaustion behavior is retained.
+The generic blind click-recovery function is not used for unknown combat.
+
+Nine new checks cover actual runtime dispatch to shared handlers, preferences,
+run counts, failure limits, Stop, connection retries and HP ranking. The complete
+Windows run still needs testing. Pack Search after exhausted refreshes has no
+existing upstream implementation to reuse and remains a checkpoint. Unrecognized
+combat and route layouts likewise still stop. No full AFK certification is claimed.
