@@ -37,13 +37,13 @@ FLOORS = {
         "Grand Welcome may now be consumed. Keep Clear Mirror, Calm Water but "
         "do not upgrade it. Fragment of Decay is an optional early target."),
     3: Floor(3, "TobeCleaved", False,
-        "Heal Faust to 45 SP. Buy T2/T3 material and finish Fragment of Conceit. "
+        "Buy T2/T3 material and finish Fragment of Conceit. Do not auto-heal Faust here. "
         "Keep Clear Mirror, Calm Water unupgraded. Avoid risky encounters."),
     4: Floor(4, "HatredandDespair", False,
         "Heal Faust to 45 SP. Obtain Fragment of Conceit, Clear Mirror, Calm Water++, "
         "Fragment of Decay and Artistic Sense++. Optional: buy a Poise potency gift."),
     5: Floor(5, "Line2", True,
-        "Heal Faust to 45 SP. Optional: buy a Poise potency gift. Field Faust solo."),
+        "Do not auto-heal Faust here. Optional: buy a Poise potency gift. Field Faust solo."),
 }
 
 SETUP = (
@@ -126,7 +126,7 @@ def checkpoint_text(number, stage):
     if stage == "combat":
         text = combat(number) + " Complete this fight manually, then resume on the map."
         if number == 3:
-            text += (" For the boss, heal Faust to 45 SP first and use Awakening on turns 1/2. "
+            text += (" For the boss, use Awakening on turns 1/2. "
                      "Slash/Pride/Lust indicates Faelantern: " + combat(3, True, True, 1)
                      + " " + combat(3, True, True, 2))
         if number == 4:

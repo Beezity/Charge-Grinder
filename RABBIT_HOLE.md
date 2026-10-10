@@ -57,9 +57,9 @@ title before starting; the keyword alone does not enable Rabbit Hole.
 | --- | --- | --- | --- |
 | 1 | Normal | Flat-broke Gamblers | Solo Faust, overclock Hollow. Buy T2/T3 material. SP-heal a non-Faust event-check ID to 45. |
 | 2 | Normal | Hell's Chicken | Overclock Hollow. Buy T2/T3 material and fuse Fragment of Conceit. Grand Welcome can be consumed now. Keep CMCW unupgraded. |
-| 3 | Normal | To Be Cleaved | Avoid risky encounters. Overclock regular fights. Heal Faust to 45 SP before boss; finish Poise Rock. Use Awakening on boss turns 1/2. |
+| 3 | Normal | To Be Cleaved | Avoid risky encounters. Overclock regular fights. Do not auto-heal Faust here; finish Poise Rock. Use Awakening on boss turns 1/2. |
 | 4 | Normal | Hatred and Despair | Heal Faust to 45 SP. Have Poise Rock, CMCW++, Sinking Rock and Artistic Sense++. Awakening turns 1/2; retry if KoD survives turn 2. |
-| 5 | Hard | Line 2 | Solo Faust, heal to 45 SP. Awakening turns 1/2; turn 2 must hit Rose, Signpost and Flesh. |
+| 5 | Hard | Line 2 | Solo Faust, no new SP heal. Awakening turns 1/2; turn 2 must hit Rose, Signpost and Flesh. |
 
 Faelantern exception on floor 3: Slash/Pride/Lust identifies the boss. Field
 seven sinners, use their skills on turn 1 alongside Faust's Le Trou, and retry if
@@ -119,3 +119,38 @@ to the directory containing the original `codex-clipboard-*.png` files to run th
 are distributed in `source/rabbit_hole_assets.json`, not the original screenshots.
 Desktop input is mocked; these tests do not establish live input timing or clear time.
 Python syntax checks also pass. Upstream GPL-3.0 licensing is preserved.
+
+## Milestone 3 — shop economy policy (planning and tests only)
+
+The new `source/rabbit_hole_shop_policy.py` makes deterministic shop decisions
+from *verified* state, and `source/rabbit_hole_shop_controller.py` checks that
+each transaction visibly changes inventory, SP, or currency before continuing.
+**They are not connected to the desktop UI yet.** The current runtime still
+stops at the manual shop checkpoint. Do not run upstream `source.shop.sell()`
+in Rabbit Hole mode: its tier-only choice can sell required gifts.
+
+* Sell an identified, unprotected gift **only when a specific pending action
+  costs more than available currency**. Prefer other spare gifts before
+  Cigarette Holder. Retain Grand Welcome throughout floor 1.
+* Never sell **or consume as fusion material**: Clear Mirror, Calm Water;
+  Fragment of Decay; Fragment of Conceit; Artistic Sense; Sharp Needles & Threads.
+* If a required gift cannot be bought or fused, **continue the dungeon with
+  available gifts**. An unrecognized screen or an unverified transaction is
+  a separate safety checkpoint, not a missing-gift condition.
+* On floor 1, restore a verified non-Faust event-check ID to 45 SP.
+  Restore Faust to 45 SP **only at the floor-4 shop**, never at floors 2/3/5.
+* A tier-IV gift costs **300 currency from base to ++** (100 then 200).
+  Clear Mirror, Calm Water++ plus Artistic Sense++ require up to 600,
+  plus 100 for floor-4 Faust SP healing when needed. Recalculate from current
+  upgrades and SP instead of spending 700 unconditionally.
+* Floors 1–3 prioritize tier-II/III materials and Fragment of Conceit;
+  floor 4 prioritizes essential gifts and upgrades, without consuming protected
+  ingredients.
+
+Run the added tests with `py -m unittest discover -s tests -v`.
+The shop policy/controller passed 13 isolated local tests; this does **not**
+validate any Windows clicks or enable autonomous transactions.
+
+Before enabling live shop automation, implement and validate a Windows adapter
+that supplies confidently identified gift names, exact upgrade levels, SP,
+currency and visible offers, and verifies sale/fusion confirmation screens.

@@ -44,8 +44,10 @@ class HollowVision:
                 return "le_trou_menu"
             return "unknown"
         if has("mao_solo") and has("winrate"):
+            if has("ready_overclock") and has("start"):
+                return "ready"
             if has("slot_overclock") or has("ready_overclock"):
-                return "ready" if has("start") else "slotted"
+                return "slotted"
             if not has("start"):
                 return "battle"
         return "unknown"
