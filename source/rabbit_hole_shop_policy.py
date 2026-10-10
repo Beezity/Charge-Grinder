@@ -95,12 +95,12 @@ def allowed_fusion(recipe: Fusion, state: ShopState) -> bool:
 
 
 def choose_sale(sales: tuple[Sale, ...], floor: int,
-                *, needed: int, currency: int) -> Sale | None:
+                *, needed: int, currency: int, reserved=frozenset()) -> Sale | None:
     """Sell a verified, unprotected gift only to fund an actual pending action."""
     if needed <= currency or not 1 <= floor <= 5:
         return None
     candidates = [s for s in sales if s.verified and s.price > 0
-                  and s.name not in PROTECTED
+                  and s.name not in PROTECTED and s.name not in reserved
                   and not (floor == 1 and s.name == "Grand Welcome")]
     # Prefer spare unprotected gifts; keep useful Cigarette Holder last.
     candidates.sort(key=lambda s: (s.name == "Cigarette Holder", s.tier, -s.price, s.name))
@@ -110,7 +110,12 @@ def choose_sale(sales: tuple[Sale, ...], floor: int,
 def with_budget(action: Action, state: ShopState, floor: int) -> Action | None:
     if action.cost <= state.currency:
         return action
-    sale = choose_sale(state.sales, floor, needed=action.cost, currency=state.currency)
+    reserved = frozenset(ingredient for recipe in state.fusions
+                         if recipe.verified and recipe.result in REQUIRED_BY_FLOOR[floor]
+                         and recipe.result not in state.owned
+                         for ingredient in recipe.ingredients)
+    sale = choose_sale(state.sales, floor, needed=action.cost, currency=state.currency,
+                       reserved=reserved)
     return Action("sell", sale.name) if sale else None
 
 

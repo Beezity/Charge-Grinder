@@ -23,6 +23,16 @@ class ShopPolicyTests(unittest.TestCase):
         self.assertIsNone(choose_sale((Sale("Unverified", 400),), 4,
                                        needed=100, currency=0))
 
+    def test_fusion_materials_are_reserved_when_selling(self):
+        s = ShopState(50, owned={"T2 gift": 0, "T3 gift": 0},
+                      sp={"Faust": 0},
+                      fusions=(Fusion("Fragment of Conceit", ("T2 gift", "T3 gift"),
+                                      verified=True),),
+                      sales=(Sale("T2 gift", 100, True),
+                             Sale("Spare", 100, True)))
+        # Floor 4 healing takes priority; do not sell ingredients needed for fusion.
+        self.assertEqual(next_action(4, s), Action("sell", "Spare"))
+
     def test_no_grand_welcome_sale_on_first_floor(self):
         self.assertIsNone(choose_sale((Sale("Grand Welcome", 100, True),), 1,
                                        needed=100, currency=0))
