@@ -92,8 +92,8 @@ Choose no HP increase or the lowest HP trial available throughout the run.
 The bot uses existing image recognition for pack names and floor numbers. Missing
 required packs trigger available refreshes, then a checkpoint for manual Pack
 Search. It never chooses a substitute pack. It verifies the difficulty toggle
-before choosing. Map routing rejects recognized risky paths on floor 3 and stops
-instead of using unknown-node fallback clicks. Recognition can still fail; this
+before choosing. Map routing prefers safer recognized paths, permits unavoidable risky paths,
+and uses the existing map fallback for unknown nodes. Recognition can still fail; this
 draft needs observed gameplay validation before unattended use.
 
 ## Early Hollow overclock
@@ -286,7 +286,7 @@ Nine new checks cover actual runtime dispatch to shared handlers, preferences,
 run counts, failure limits, Stop, connection retries and HP ranking. The complete
 Windows run still needs testing. Pack Search after exhausted refreshes has no
 existing upstream implementation to reuse and remains a checkpoint. Unrecognized
-combat and route layouts likewise still stop. No full AFK certification is claimed.
+combat interfaces and unsuccessful map entry still produce checkpoints. No full AFK certification is claimed.
 
 ## Unavoidable encounter update
 
