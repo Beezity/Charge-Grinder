@@ -148,7 +148,7 @@ in Rabbit Hole mode: its tier-only choice can sell required gifts.
   ingredients.
 
 Run the added tests with `py -m unittest discover -s tests -v`.
-The shop policy/controller passed 13 isolated local tests; this does **not**
+The shop policy/controller passed 14 isolated local tests; this does **not**
 validate any Windows clicks or enable autonomous transactions.
 
 Before enabling live shop automation, implement and validate a Windows adapter
