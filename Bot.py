@@ -254,6 +254,9 @@ def dungeon_fail():
 
 # MAIN LOOP
 def main_loop():
+    if p.RABBIT_HOLE:
+        from source.rabbit_hole_runtime import run
+        return run()
     dungeon_start()
     error = 0
     last_error = 0
@@ -389,6 +392,19 @@ def set_team(team, teams, keywordless):
 
 
 def execute_me(count, count_exp, count_thd, teams, settings, hard, app, warning):
+    p.RABBIT_HOLE = settings.get('rabbit_hole', p.RABBIT_HOLE)
+    if p.RABBIT_HOLE:
+        if settings['hos_mode'] or settings['infinity'] or any(key >= 7 for key in teams):
+            raise ValueError("Rabbit Hole requires MD only, with HOS and Extreme disabled.")
+        if len(teams) != 1:
+            raise ValueError("Select exactly one MD team for the Rabbit Hole calibration draft.")
+        from source.rabbit_hole import validate_keyword, KEYWORD
+        rabbit_team = next(iter(teams.values()))
+        validate_keyword([list(TEAMS)[i] for i in rabbit_team['affinity']])
+        p.TEAM = [KEYWORD]
+        p.NAME_ORDER = rabbit_team['affinity_idx']
+        p.DUPLICATES = rabbit_team['duplicates']
+        p.RABBIT_NODE = None
     p.HARD = hard
     p.BONUS = settings['bonus']
     p.COLLECT = settings['collect']
@@ -414,6 +430,16 @@ def execute_me(count, count_exp, count_thd, teams, settings, hard, app, warning)
     logging.info('Script started')
     try:
         gui.set_window()
+        if p.RABBIT_HOLE:
+            from source.rabbit_hole import floor_plan
+            if tuple(p.WINDOW[2:]) != (1920, 1080):
+                raise ValueError("Rabbit Hole calibration currently requires a 1920x1080 game client.")
+            p.HARD = floor_plan(p.LVL).hard
+            p.SELECTED = ["FAUST"]
+            # The manually prepared run must use graces 1 and 3 as documented.
+            p.BUFF = [1, 0, 1, 0, 0, 0, 0, 0, 0, 0]
+            main_loop()
+            return
         lux_keys = [key for key in teams.keys() if key >= 7]
         team_keys = [key for key in teams.keys() if key < 7]
 

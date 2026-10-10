@@ -18,12 +18,12 @@ def remove_pack(level, name):
 
 def pack_eval(level, regions, skip, skips):
     # best packs
-    priority = p.PICK[f"floor{level}"]
+    priority = [] if p.RABBIT_HOLE else p.PICK[f"floor{level}"]
     print(priority)
     logging.info(f"Pick: {priority}")
 
     # worst packs (suboptimal time)
-    banned = p.IGNORE[f"floor{level}"]
+    banned = [] if p.RABBIT_HOLE else p.IGNORE[f"floor{level}"]
     print(banned)
     logging.info(f"Ignore: {banned}")
 
@@ -45,6 +45,14 @@ def pack_eval(level, regions, skip, skips):
     
     logging.info(packs)
     print(packs)
+
+    if p.RABBIT_HOLE:
+        from source.rabbit_hole import choose_pack, CheckpointRequired
+        from source.rabbit_hole_runtime import checkpoint
+        try:
+            return choose_pack(level, packs, skip < skips)
+        except CheckpointRequired as exc:
+            checkpoint("pack", str(exc))
     
     # picking the best pack
     # the first loop checks for packs with specified floor number
@@ -138,6 +146,9 @@ def update_lvl(level):
 
     if (assumed_lvl in range(1, 6)) or (p.EXTREME and assumed_lvl in range(1, 16)):
         return assumed_lvl
+    elif p.RABBIT_HOLE:
+        from source.rabbit_hole_runtime import checkpoint
+        checkpoint("floor", "Floor number could not be read. Select the required pack manually and relaunch with the correct floor.")
     elif (level + 1 in range(1, 6)) or (p.EXTREME and level + 1 in range(1, 16)):
         return level + 1
     else:
@@ -150,6 +161,10 @@ def pack():
     print("pack check")
     p.LVL = update_lvl(p.LVL)
 
+    if p.RABBIT_HOLE:
+        from source.rabbit_hole import floor_plan
+        p.HARD = floor_plan(p.LVL).hard
+
     if p.LVL == 6 or p.LVL == 11: time.sleep(2) # animation
 
     if p.LVL <= 5:
@@ -158,6 +173,12 @@ def pack():
         else:
             if not now.button("hardDifficulty"):
                 win_click(1349, 64)
+
+    if p.RABBIT_HOLE:
+        time.sleep(0.5)
+        if bool(now.button("hardDifficulty")) != p.HARD:
+            from source.rabbit_hole_runtime import checkpoint
+            checkpoint("difficulty", f"Could not verify {'Hard' if p.HARD else 'Normal'} difficulty. Set it manually before selecting a pack.")
 
     print(f"Entering Floor {p.LVL}")
     logging.info(f"Floor {p.LVL}")

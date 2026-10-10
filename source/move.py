@@ -142,6 +142,10 @@ def next_step(nodes, extra_connections):
                 adj.setdefault((c,d), []).append((a,b))
 
     def dfs(i, j):
+        if p.RABBIT_HOLE:
+            from source.rabbit_hole import node_allowed
+            if not node_allowed(p.LVL, nodes[i][j]):
+                return float('inf')
         base = priority[nodes[i][j]]
         if i == L - 1:
             return base
@@ -187,7 +191,8 @@ def enter(wait=1.2):
 
 
 def move():
-    enter(wait=False)
+    if not p.RABBIT_HOLE:
+        enter(wait=False)
     is_move = now.button("Move")
 
     if is_move and p.MOVE_ANIMATION:
@@ -210,6 +215,9 @@ def move():
     p.DEAD = len([gui.center(box) for box in LocateRGB.locate_all(PTH["0"], region=REG["alldead"], conf=0.9, threshold=40)])
     print(f"{p.DEAD} dead sinners")
     if p.DEAD == 12:
+        if p.RABBIT_HOLE:
+            from source.rabbit_hole_runtime import checkpoint
+            checkpoint("defeat", "All sinners appear defeated. Review the run manually.")
         gui.press("esc")
         time.sleep(0.5)
         chain_actions(click, [
@@ -232,6 +240,9 @@ def move():
             action=lambda: gui.press("a"),
             timer=2)
         if not now_rgb.button("Danteh"):
+            if p.RABBIT_HOLE:
+                from source.rabbit_hole_runtime import checkpoint
+                checkpoint("route", "Map position could not be recognized. Choose the next node manually.")
             gui.press("space")
             if enter():
                 logging.info("Entering unknown node")
@@ -244,6 +255,9 @@ def move():
     adjust = 0
     if len(regions) == 0:
         print("Case 2: No directions are visible")
+        if p.RABBIT_HOLE:
+            from source.rabbit_hole_runtime import checkpoint
+            checkpoint("route", "No route was recognized. Choose the next node manually.")
         if input_with_fallback("space", lambda: win_click(705, 411), enter) or move_fallback():
             logging.info("Entering unknown node")
             return True
@@ -254,6 +268,9 @@ def move():
         region = regions[region_idx]
         _loc = LocatePreset(image=screenshot(region=region), v_comp=v_list[region_idx], conf=0.8, wait=False)
         name = get_node_name(_loc, region)
+        if p.RABBIT_HOLE:
+            from source.rabbit_hole_runtime import require_node
+            require_node(name)
         key_name = keys_map.get(region_idx, "d")
 
         if input_with_fallback(key_name, lambda: win_click(gui.center(region)), enter):
@@ -314,6 +331,9 @@ def move():
         print(nodes)
         id, name = next_step(nodes, inter_connect)
         if not id is None:
+            if p.RABBIT_HOLE:
+                from source.rabbit_hole_runtime import require_node
+                require_node(name)
             key_name = keys_map.get(int(id-adjust), "d")
             region = regions[id]
             if input_with_fallback(key_name, lambda: win_click(gui.center(region)), enter):
@@ -322,10 +342,16 @@ def move():
     elif move_fallback():
         logging.info("Entering unknown node")
         return True
+    if p.RABBIT_HOLE:
+        from source.rabbit_hole_runtime import checkpoint
+        checkpoint("route", "No verified safe route was found. Choose the next node manually.")
     return False
 
 
 def move_fallback():
+    if p.RABBIT_HOLE:
+        from source.rabbit_hole_runtime import checkpoint
+        checkpoint("route", "Unknown nodes are not entered in Rabbit Hole mode. Choose the next node manually.")
     for key in ["d", "space"]:
         gui.press(key)
         if enter():

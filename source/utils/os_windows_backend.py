@@ -250,8 +250,9 @@ def mouseDown(button='left', delay=0.16, jitter=0.04):
 
 
 def mouseUp(button='left', delay=0.16, jitter=0.05):
-    _fail_safe_check()
+    # Release first: stop/focus checks must not leave a held button down.
     _get_bridge().mouse_release(button=button)
+    _fail_safe_check()
     if delay > 0:
         _human_delay(delay, delay + max(0.0, jitter))
     _fail_safe_check()

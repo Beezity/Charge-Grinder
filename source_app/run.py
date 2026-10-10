@@ -1,6 +1,8 @@
 from source_app.utils import *
 from source_app.cache import CacheWorker
 from source.utils.paths import APP_VERSION
+from source.rabbit_hole import CheckpointRequired
+import source.utils.params as p
 
 from PySide6.QtCore import QUrl
 from PySide6.QtNetwork import QNetworkAccessManager, QNetworkRequest, QNetworkReply
@@ -73,7 +75,7 @@ class BotWorker(QObject):
     def run(self):
         try:
             teams_filtered = {k: v for k, v in self.teams.items() if k < 7}
-            if teams_filtered:
+            if teams_filtered and not self.settings.get('rabbit_hole', p.RABBIT_HOLE):
                 self.start_cache_thread(teams_filtered, self.settings, self.hard)
 
             Bot.execute_me(
@@ -86,6 +88,9 @@ class BotWorker(QObject):
                 self.app,
                 warning=self.warning.emit
             )
+        except CheckpointRequired as e:
+            logging.info("%s", e)
+            self.error.emit(str(e))
         except Exception as e:
             logging.exception("Uncaught exception in BotWorker thread")  
             self.error.emit(str(e))
