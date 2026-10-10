@@ -92,10 +92,11 @@ def combat(number, boss=False, faelantern=False, turn=1):
         return "OVERCLOCK Hollow Faust; field Faust solo."
     if faelantern:
         if turn == 1:
-            return ("Field 7 sinners. Use their skills on turn 1 and Awakening Hollow "
-                    "(Le Trou) on Faust. Retry if Faust is Charmed.")
+            return ("Field Mao Faust solo. Use Awakening Hollow "
+                    "(Le Trou) on Faust; accept corrosion and do not retry for Charm.")
         return ("Use Awakening Hollow (Boucher un trou) only after Faelantern emerges. "
-                "Do not use the other sinners' attacks after turn 1.")
+                "Do not use the other sinners' attacks after turn 1. "
+                "If it survives after Boucher un trou, use Damage.")
     if number == 4 and boss and turn > 2:
         return "RETRY: KoD survived turn 2."
     if turn == 1:
@@ -105,7 +106,7 @@ def combat(number, boss=False, faelantern=False, turn=1):
             return ("Awakening Hollow (Boucher un trou), hitting Rose + Signpost + Flesh. "
                     "If Roses outspeeds Faust, clash with the faster part while retaining all parts.")
         return "Awakening Hollow Faust (Boucher un trou)."
-    return "Manual review required: fight exceeded the scripted two-turn sequence."
+    return "Use Win Rate if enemies remain after Hollow or Boucher un trou was used."
 
 
 def protected_gifts(number):

@@ -69,8 +69,8 @@ class PolicyTests(unittest.TestCase):
         self.assertIn("Boucher un trou", combat(3, boss=True, turn=2))
 
     def test_faelantern_exception(self):
-        self.assertIn("7 sinners", combat(3, True, True))
-        self.assertIn("Charmed", combat(3, True, True))
+        self.assertIn("Mao Faust solo", combat(3, True, True))
+        self.assertIn("accept corrosion", combat(3, True, True))
         self.assertIn("emerges", combat(3, True, True, 2))
         with self.assertRaises(ValueError):
             combat(2, True, True)
@@ -78,7 +78,7 @@ class PolicyTests(unittest.TestCase):
     def test_kod_and_roses(self):
         self.assertIn("RETRY", combat(4, True, turn=3))
         self.assertIn("Rose + Signpost + Flesh", combat(5, True, turn=2))
-        self.assertIn("Manual review", combat(5, True, turn=3))
+        self.assertIn("Win Rate", combat(5, True, turn=3))
 
     def test_invalid_turn(self):
         for turn in (0, -1, True, 1.5):

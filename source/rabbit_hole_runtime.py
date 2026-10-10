@@ -28,20 +28,35 @@ def require_node(name):
 
 
 def try_first_turn():
-    from source.utils.utils import screenshot
+    from source.utils.utils import screenshot, p
     from source.rabbit_hole_vision import HollowVision
-    from source.rabbit_hole_combat import fight_first_turn
-    vision = HollowVision()
-    if vision.observe(screenshot()) == "unknown":
+    from source.rabbit_hole_combat import fight_first_turn, allowed_encounter
+    if allowed_encounter(p.LVL,p.RABBIT_NODE):
+        vision = HollowVision()
+        if vision.observe(screenshot()) != "unknown":
+            fight_first_turn(vision)
+            return True
+    from source.rabbit_hole_boss_vision import BossVision
+    from source.rabbit_hole_boss_combat import run_solo_battle
+    vision = BossVision()
+    encounter,state = vision.inspect(screenshot())
+    if state is None:
         return False
-    fight_first_turn(vision)
-    return True
+    eligible = {"faelantern":3,"kod":4,"roses":5}
+    if encounter in eligible and p.LVL == eligible[encounter] and p.RABBIT_NODE == "Boss":
+        if state.planning or (encounter == "kod" and state.turn >= 3):
+            run_solo_battle(vision,encounter)
+            return True
+    if p.LVL in (3,4,5) and p.RABBIT_NODE in ("Normal","Focused","Miniboss") and state.planning and not encounter:
+        run_solo_battle(vision,"ordinary")
+        return True
+    return False
 
 
 def deploy():
     from source.utils.utils import p
     from source.rabbit_hole_combat import allowed_encounter
-    if not allowed_encounter(p.LVL, p.RABBIT_NODE):
+    if not allowed_encounter(p.LVL, p.RABBIT_NODE) and p.RABBIT_NODE not in ("Boss", "Normal", "Focused", "Miniboss"):
         checkpoint("combat")
     from source.battle import select
     if not select(["FAUST"]):

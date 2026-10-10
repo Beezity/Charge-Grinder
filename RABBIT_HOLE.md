@@ -8,8 +8,10 @@ Strategy source: [Rabbit Hole, updated 8 October 2026](https://docs.google.com/s
 the floor-5 difficulty switch, conservative map navigation, early first-turn
 Hollow overclock and manual checkpoints.
 The shop adapter now handles purchases, sales, fusion, upgrades and SP healing
-with visual verification. Gifts, trials, events, startup, later combat and reward
-collection still require manual action. Shop inputs await live Windows validation.
+with visual verification. The new solo combat controller selects Le Trou and Boucher
+un trou, resets KoD at turn 3, and applies Win Rate/Damage fallbacks. Gifts, trials,
+events, startup, unrecognized combat and reward collection still require manual
+action. Shop and combat inputs await live Windows validation.
 Windows input and live recognition have not been tested in this environment.
 
 ## Windows setup
@@ -40,7 +42,8 @@ Name/tag the in-game preset Rupture as shown in your team screenshot.
 Ordinary Rupture behavior is available with the Rabbit Hole toggle off.
 The app's ordinary affinity/shop settings are not used by this assisted runtime.
 Prepare the correct Mao Faust team manually. For eligible early encounters the
-runtime deploys Faust alone using upstream selection. Later boss deployment is manual.
+runtime deploys Faust alone using upstream selection, including the confirmed
+solo Faelantern configuration.
 
 Manually start Normal with level 60+ UT3+ Mao Faust and only Hollow equipped
 (TS3+, TS4 preferred). Select graces 1 and 3 and two Gift Searches; obtain
@@ -67,9 +70,12 @@ title before starting; the keyword alone does not enable Rabbit Hole.
 | 5 | Hard | Line 2 | Solo Faust, no new SP heal. Awakening turns 1/2; turn 2 must hit Rose, Signpost and Flesh. |
 
 Faelantern exception on floor 3: Slash/Pride/Lust identifies the boss. Field
-seven sinners, use their skills on turn 1 alongside Faust's Le Trou, and retry if
-Faust is Charmed. Use Boucher un trou only after Faelantern emerges; other sinners
-must not attack after turn 1. On floor 4, optional meatshields must not attack.
+Mao Faust solo, as confirmed by the user for this fork. The footage reader
+recognizes that layout. Use Le Trou without forcing overclock;
+accept corrosion and do not reset because of Charm. Wait until Faelantern emerges
+before choosing Boucher un trou. EGO-menu transitions are verified directly;
+the sword overlay during a held click is not treated as proof of Charm. If it survives that use,
+select Damage. On floor 4, optional meatshields must not attack.
 Choose no HP increase or the lowest HP trial available throughout the run.
 
 The bot uses existing image recognition for pack names and floor numbers. Missing
@@ -92,22 +98,40 @@ The five supplied screenshots calibrate these transitions at 1920×1080:
 
 This is enabled on floors 1/2 and on floor 3 only when the bot entered a recognized
 non-boss combat node. Resuming an unknown floor-3 encounter stops for manual review.
-Focused layouts, later turns, later waves, extra slots, unrecognized portraits,
-Awakening and floors 4/5 are not handled by this sequence. Failed transitions stop
+This overclock sequence itself does not handle Awakening or later waves. If
+enemies survive, the new controller applies Win Rate on later recognized solo
+turns instead of selecting EGO again. Unrecognized layouts still stop. Failed transitions stop
 without repeated clicks. A turn that does not finish in 180 seconds also stops.
 Switching away or stopping during a hold releases the mouse button.
 
 The hold duration and Windows input behavior still need a live trial. Recognition
 tests use the supplied frames, not independent gameplay captures.
 
-## Remaining calibration
+## Milestone 4 — combat controller draft
 
-Provide original 1920×1080 screenshots, or preferably a short video, showing:
+The five combat videos supplied on 10 October calibrate turn counters 1/2/3,
+Boucher's menu, selected EGO, KoD/Faelantern/Roses scenes, and Faelantern's emerged
+and held-click overlay states. EGO usage is recorded only after a verified turn
+start; duplicate planning frames cannot repeat an input. Resuming a later turn
+without usage history stops rather than guessing whether EGO was used.
 
-1. The turn-2 Awakening form, Boucher un trou, and its target indicators.
-2. Focused-encounter skill selection with Hollow open and selected.
-3. Later: Faelantern charm/emergence, KoD after turn 2, and Sign of Roses with all
-   three parts highlighted. The two supplied shop recordings are now calibrated.
+- KoD: Le Trou then Boucher; counter 3 triggers a battle retry before a fallback.
+  The retry menu/confirmation use exact recognized text and stop when ambiguous.
+  **No supplied clip shows the retry menu, so that interaction is unvalidated.**
+  At most three retries are attempted. Usage resets only after verified turn 1.
+- Faelantern: Le Trou, accept corrosion, do not reset for Charm. Wait through an
+  underground turn using Damage in the calibrated solo layout;
+  use Boucher once emerged and selectable. After Boucher, surviving enemies use
+  Damage. Deployment selects Faust solo.
+- Other supported solo fights: after overclock Hollow or Boucher, surviving enemies
+  use Win Rate. Ordinary later-floor solo encounters now select Awakening.
+- Sign of Roses: turn 1 is supported, but **turn 2 still checkpoints** until Rose,
+  Signpost and Flesh coverage can be verified. The recording shows the sequence;
+  automatic target verification is not implemented yet.
+
+Still needed: a recording of KoD's battle retry menu and confirmation, verified
+Roses targeting, independent Windows input trials, and remaining layout
+coverage. This is a combat implementation draft, not completed Milestone 4.
 
 Checkpoint screenshots are local only; the draft does not upload them.
 
@@ -117,12 +141,14 @@ Checkpoint screenshots are local only; the draft does not upload them.
 .\.venv\Scripts\python.exe -m unittest discover -s tests -v
 ```
 
-**68 tests pass locally**, including policy/controller/settings tests, five supplied combat
-screenshot cases, and eight shop video replay tests. To include the originals:
+**87 tests pass locally**, including policy/controller/settings tests, five supplied combat
+screenshot cases, eight shop video replay tests, and nineteen new combat checks
+(five replay the new recordings). To include the originals:
 
 ```powershell
 $env:RABBIT_CAPTURE_DIR = "C:\path\to\combat-screenshots"
 $env:RABBIT_SHOP_VIDEO_DIR = "C:\path\to\OBS Recordings"
+$env:RABBIT_COMBAT_VIDEO_DIR = "C:\path\to\OBS Recordings"
 .\.venv\Scripts\python.exe -m unittest discover -s tests -v
 ```
 
@@ -181,7 +207,8 @@ can repeat only after a verified 45-SP gain, until the intended sinner reaches
 ## Remaining milestones after the shop
 
 1. Finish Awakening, turn 2, focused combat, Faelantern, Knight of Despair retries,
-   and Sign of Roses targeting.
+   and Sign of Roses targeting. The solo controller is implemented; additional layout coverage,
+   retry-menu validation and Roses target verification remain.
 2. Automate startup, gifts, events, trials, pack search, rewards and transitions.
 3. Add bounded recovery, restart/repeat runs and resource/stop conditions.
 4. Validate complete and repeated AFK runs on Windows.

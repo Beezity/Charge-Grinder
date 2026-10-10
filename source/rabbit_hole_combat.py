@@ -84,7 +84,12 @@ def fight_first_turn(vision):
     io = DesktopInput(vision)
     try:
         slot_and_start(io, u.p.LVL, u.p.RABBIT_NODE)
-        # Do not reuse the input sequence while the turn is starting or playing.
+        from source.rabbit_hole_boss_vision import BossVision
+        from source.rabbit_hole_boss_combat import SoloBattleIO, advance
+        from source.rabbit_hole_combat_policy import BattlePolicy
+        later_io = SoloBattleIO(BossVision())
+        policy = BattlePolicy("ordinary", hollow_used=True, started_turns={1})
+        # Never reuse the overclock sequence; surviving enemies use Win Rate.
         deadline = u.time.monotonic() + 180
         while u.time.monotonic() < deadline:
             io.guard()
@@ -92,6 +97,11 @@ def fight_first_turn(vision):
                 "EGObin", "encounterreward", "victory", "defeat", "Move", "PackChoice")):
                 u.p.RABBIT_NODE = None
                 return
+            _, state = later_io.observe_battle()
+            if state is not None and state.turn > 1 and state.planning:
+                action = advance(policy,state,later_io)
+                if action != "wait":
+                    deadline = u.time.monotonic()+180
             u.time.sleep(0.2)
         raise CheckpointRequired("The battle did not finish within 180 seconds. Check for a surviving enemy or a later turn.")
     except CheckpointRequired as exc:
