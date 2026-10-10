@@ -9,6 +9,13 @@ from source.rabbit_hole_combat_policy import BattleState
 class BossVision(HollowVision):
     def __init__(self):
         super().__init__(Path(__file__).with_name('rabbit_hole_boss_assets.json'))
+        overclock=HollowVision()
+        for name in ('menu_overclock','slot_overclock','ready_overclock'):
+            spec,template=overclock.templates[name]
+            spec=dict(spec)
+            if name!='menu_overclock':
+                spec['search']=[300,750,1400,200]
+            self.templates[name]=(spec,template)
 
     def locate(self, frame, name):
         if frame is None or frame.shape[:2] != (1080, 1920):
@@ -23,7 +30,7 @@ class BossVision(HollowVision):
         return (x+point[0]+template.shape[1]//2,y+point[1]+template.shape[0]//2)
 
     def ego_selected(self, frame):
-        return any(self.locate(frame,n) is not None for n in self.templates if n.startswith("ego_slot"))
+        return any(self.locate(frame,n) is not None for n in self.templates if n.startswith("ego_slot") or n in ("slot_overclock","ready_overclock"))
 
     def targets(self, frame, name):
         """Find each copy of a known enemy skill's inner artwork, excluding arrows."""

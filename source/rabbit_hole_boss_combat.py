@@ -46,10 +46,7 @@ class SoloBattleIO(DesktopInput):
                    for w in self._reader().read(frame,(1040,495,320,55),scale=2))
 
     def overclock_visible(self, frame):
-        from source.rabbit_hole_vision import HollowVision
-        vision=HollowVision()
-        spec,_=vision.templates['menu_overclock']
-        return vision.scores(frame).get('menu_overclock',0)>=spec['threshold']
+        return self.vision.locate(frame,'menu_overclock') is not None
 
     def choose_ego(self, action):
         frame = self.capture()
