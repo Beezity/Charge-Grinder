@@ -24,6 +24,7 @@ start_locations = {
     "MD": 1,
     "Start": 2,
     "enterInvert": 5,
+    "underleveled": 8,
     "ConfirmTeam": 6,
     "enterBonus": 12,
     "Confirm.0": 15,
@@ -40,7 +41,20 @@ def select_grace():
             if p.BUFF[i] > 1:
                 ClickAction((x + 60*(1 - 2*(p.BUFF[i] < 3)), y + 155), ver="money!").execute(try_click)
 
-def dungeon_start():
+def confirm_team_warning():
+    # Existing confirmation first; the supplied underlevel popup has a newer
+    # button appearance. Match its message before using its confirm coordinate.
+    if now_click.button("ConfirmInvert"):
+        return
+    if now.button("underleveled"):
+        if p.LIMBUS_NAME not in (window := gui.getActiveWindowTitle()):
+            pause(window)
+        win_click(1149, 743)
+        if not wait_while_condition(lambda: now.button("underleveled"), timer=8):
+            raise RuntimeError("Underleveled team confirmation did not close")
+
+
+def dungeon_start(starting_gifts=None):
     ACTIONS = [
         Action("Drive"),
         Action("MD", ver="Start"),
@@ -51,7 +65,7 @@ def dungeon_start():
         select_team,
         lambda: try_click.button("ConfirmTeam"),
         lambda: time.sleep(0.5),
-        lambda: now_click.button("ConfirmInvert"),
+        confirm_team_warning,
         lambda: wait_while_condition(lambda: not now.button("enterBonus")),
         lambda: time.sleep(0.2),
 
@@ -65,7 +79,11 @@ def dungeon_start():
 
     ]
 
-    if p.HOS_MODE is False:
+    if starting_gifts is not None:
+        # Keep the upstream navigation, preset and grace actions. Rabbit Hole
+        # supplies its own gift step instead of the ordinary affinity defaults.
+        ACTIONS.append(starting_gifts)
+    elif p.HOS_MODE is False:
         ACTIONS.extend([
             lambda: now_click.button("giftSearchOn"),
             ClickAction(p.GIFTS[0]["checks"][2], ver="gifts!"),
@@ -114,6 +132,8 @@ def dungeon_start():
             else: break
             try:
                 chain_actions(try_click, ACTIONS[i:])
+                if starting_gifts is not None:
+                    return
             except RuntimeError:
                 failed += 1
                 win_moveTo(1509, 978)
@@ -254,6 +274,9 @@ def dungeon_fail():
 
 # MAIN LOOP
 def main_loop():
+    if p.RABBIT_HOLE:
+        from source.rabbit_hole_runtime import run
+        return run()
     dungeon_start()
     error = 0
     last_error = 0
@@ -389,6 +412,19 @@ def set_team(team, teams, keywordless):
 
 
 def execute_me(count, count_exp, count_thd, teams, settings, hard, app, warning):
+    p.RABBIT_HOLE = settings.get('rabbit_hole', p.RABBIT_HOLE)
+    if p.RABBIT_HOLE:
+        if settings['hos_mode'] or settings['infinity'] or any(key >= 7 for key in teams):
+            raise ValueError("Rabbit Hole requires MD only, with HOS and Extreme disabled.")
+        if len(teams) != 1:
+            raise ValueError("Select exactly one MD team for the Rabbit Hole calibration draft.")
+        from source.rabbit_hole import validate_keyword, KEYWORD
+        rabbit_team = next(iter(teams.values()))
+        validate_keyword([list(TEAMS)[i] for i in rabbit_team['affinity']])
+        p.TEAM = [KEYWORD]
+        p.NAME_ORDER = rabbit_team['affinity_idx']
+        p.DUPLICATES = rabbit_team['duplicates']
+        p.RABBIT_NODE = None
     p.HARD = hard
     p.BONUS = settings['bonus']
     p.COLLECT = settings['collect']
@@ -414,6 +450,24 @@ def execute_me(count, count_exp, count_thd, teams, settings, hard, app, warning)
     logging.info('Script started')
     try:
         gui.set_window()
+        if p.RABBIT_HOLE:
+            from source.rabbit_hole import floor_plan
+            if tuple(p.WINDOW[2:]) != (1920, 1080):
+                raise ValueError("Rabbit Hole calibration currently requires a 1920x1080 game client.")
+            p.HARD = floor_plan(p.LVL).hard
+            p.SELECTED = ["FAUST"]
+            # These are consumed by the shared dungeon_start/select_grace flow.
+            p.BUFF = [1, 0, 1, 0, 0, 0, 0, 0, 0, 0]
+            from source.rabbit_hole_progression import configure_rewards, repeat_runs
+            configure_rewards(p, TEAMS, settings['keywordless'])
+            repeat_runs(main_loop, p, count, check_enkephalin if p.NETZACH else None)
+            if p.stop_event.is_set():
+                return
+            if p.ALTF4:
+                close_limbus()
+            if p.APP:
+                QMetaObject.invokeMethod(p.APP, "stop_execution", Qt.ConnectionType.QueuedConnection)
+            return
         lux_keys = [key for key in teams.keys() if key >= 7]
         team_keys = [key for key in teams.keys() if key < 7]
 

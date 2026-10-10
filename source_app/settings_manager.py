@@ -318,7 +318,7 @@ class SettingsManager(QObject):
             del data["AFFINITY"]
 
         def is_valid_extra_structure(extra_data):
-            if not (isinstance(extra_data, list) and len(extra_data) == 9):
+            if not (isinstance(extra_data, list) and len(extra_data) in (9, 10)):
                 return False
             counts = extra_data[:3]
             if counts[0] == -1: counts[0] = 9999 # only needed for checks

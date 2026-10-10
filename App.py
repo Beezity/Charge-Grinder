@@ -11,6 +11,7 @@ from source_app.button import CustomButton
 from source_app.run import VersionChecker, BotWorker
 from source_app.check_interception import check_windows
 from source_app.check_linux_backend import check_linux
+from PySide6.QtWidgets import QInputDialog
 
 class MyApp(QWidget):
     webhook_test_result = pyqtSignal(bool, str)
@@ -289,6 +290,9 @@ class MyApp(QWidget):
 
         add_button("webhook_open", "Discord Webhook", self.config, (44, 82, 192, 28), 13, self.toggle_webhook_panel)
         add_button("hos_mode", "Arayashu", self.config, (244, 82, 192, 28), 13, self.update_button_icons, checkable=True)
+        add_button("rabbit_hole_mode", "Rabbit Hole (Rupture)", self.config, (444, 82, 212, 28), 13, self.update_button_icons, checkable=True)
+        self.rabbit_hole_mode.setChecked(p.RABBIT_HOLE)
+        self.rabbit_hole_mode.setToolTip("Mao Faust draft; Rupture first keyword. MD entry, preset selection, graces, starting gifts, calibrated combat and shops are connected. Pack Search and shared progression are connected; live Windows validation is pending.")
 
         self.webhook_panel = QFrame(self.config)
         self.webhook_panel.setGeometry(24, 104, 652, 560)
@@ -891,6 +895,7 @@ class MyApp(QWidget):
     def set_extra(self):
         state = self.sm.get_extra()
         if not state: return
+        self.rabbit_hole_mode.setChecked(p.RABBIT_HOLE or (len(state) > 9 and bool(state[9])))
 
         self.inputField.setText(str(state[0]) if state[0] != -1 else "ALL")
         self.exp.setText(str(state[1]))
@@ -918,6 +923,7 @@ class MyApp(QWidget):
         for i in range(5):
             extra.append(self.buttons[f"on{i + 7}"].isChecked())
         extra.append(self.hos_mode.isChecked())
+        extra.append(self.rabbit_hole_mode.isChecked())
         self.sm.set_extra(extra)
         self.sync_webhook_settings(show_message=False)
         self.sm.save_settings()
@@ -1257,7 +1263,7 @@ class MyApp(QWidget):
         self.sm.set_config(7, {str(id): state for id, state in self.keywordless.items()})
         self.sm.set_config(8, self.get_config_buttons())
         self.sm.set_config(9, self.get_cards())
-        self.sm.save_settings()
+        self.save_affinity()
         self.ego_panel.hide()
         self.grace_panel.hide()
         self.webhook_panel.hide()
@@ -1757,6 +1763,7 @@ class MyApp(QWidget):
             'winrate'    : self.hard or self.buttons['on6'].isChecked() if not p.HOS_MODE else self.buttons['on6'].isChecked(), # Thanks to @zombpr for finding this
             'infinity'   : self.hard and self.buttons['on6'].isChecked(),
             'hos_mode'   : self.hos_mode.isChecked(),
+            'rabbit_hole': self.rabbit_hole_mode.isChecked(),
             'buff'       : [getattr(self.buttons[f'buff{i}'], 'config', {}).get('state', 0) for i in range(10)],
             'card'       : self.get_cards(),
             'keywordless': {Bot.WORDLESS[id]['name']: state for id, state in self.keywordless.items()}
@@ -1769,6 +1776,27 @@ class MyApp(QWidget):
 
         if not self.get_params():
             return
+        if self.rabbit_hole_mode.isChecked():
+            from source.rabbit_hole import validate_keyword
+            try:
+                if len(self.teams) != 1 or any(key >= 7 for key in self.teams):
+                    raise ValueError("Rabbit Hole requires exactly one MD team and no Luxcavation.")
+                team = next(iter(self.teams.values()))
+                validate_keyword([list(Bot.TEAMS)[i] for i in team['affinity']])
+                if self.hos_mode.isChecked() or self.settings['infinity']:
+                    raise ValueError("Disable Arayashu and Extreme for Rabbit Hole.")
+            except ValueError as exc:
+                self._show_message("Rabbit Hole", str(exc), QMessageBox.Icon.Information)
+                return
+            floor, accepted = QInputDialog.getInt(self, "Rabbit Hole — current floor",
+                "Current floor (destination floor if choosing a pack):", p.LVL, 1, 5)
+            if not accepted:
+                return
+            p.LVL = floor
+        p.RABBIT_HOLE = self.rabbit_hole_mode.isChecked()
+        self.window().setWindowTitle(
+            "ChargeGrinder — Rabbit Hole / Mao Faust (assisted draft)"
+            if p.RABBIT_HOLE else f"ChargeGrinder v{Bot.APP_VERSION}")
         if not self.check_inputs() or not self.check_sinners():
             self.buttons['guide_icon'].trigger_glow_once()
             return
@@ -1861,6 +1889,10 @@ class MyApp(QWidget):
         msg.setIcon(QMessageBox.Icon.Critical)
         msg.setWindowTitle("Bot Error")
         msg.setText("Traceback is saved in the log file. \nError message:")
+        if message.startswith("Rabbit Hole checkpoint"):
+            msg.setIcon(QMessageBox.Icon.Information)
+            msg.setWindowTitle("Rabbit Hole — manual step")
+            msg.setText("Automation stopped. Complete this step in Limbus, then start again.")
         msg.setInformativeText(message)
         msg.setStandardButtons(QMessageBox.StandardButton.Ok)
         msg.exec()
@@ -1880,6 +1912,8 @@ class ScrollableMyApp(QMainWindow):
         self.base_height = 785
         
         self.setWindowTitle(f"ChargeGrinder v{Bot.APP_VERSION}")
+        if Bot.p.RABBIT_HOLE:
+            self.setWindowTitle("ChargeGrinder — Rabbit Hole / Mao Faust (assisted draft)")
         self.setWindowIcon(QIcon(Bot.ICON))
         
         self.scroll_area = QScrollArea()

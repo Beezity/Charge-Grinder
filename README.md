@@ -1,3 +1,9 @@
+> **Rabbit Hole / Mao Faust assisted draft (10 October 2026).**
+> Read [RABBIT_HOLE.md](RABBIT_HOLE.md) and launch `Start-Rabbit-Hole.bat`.
+> Early single-slot overclock is implemented. Awakening, bosses, shops and rewards
+> still need manual steps. This is not a complete unattended bot.
+> Original upstream README follows.
+
 <div align="center">
 <!-- <a href="https://github.com/Walpth/Charge-Grinder/releases/latest/download/app.exe">
   <img alt="Download" src="https://img.shields.io/badge/app.exe-Download-blue.svg">

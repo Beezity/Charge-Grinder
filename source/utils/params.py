@@ -26,6 +26,8 @@ EXTREME = False
 APP = None
 
 HOS_MODE = False
+RABBIT_HOLE = False
+RABBIT_NODE = None
 
 PICK = {}
 IGNORE = {}
