@@ -146,7 +146,11 @@ def next_step(nodes, extra_connections):
             from source.rabbit_hole import node_allowed
             if not node_allowed(p.LVL, nodes[i][j]):
                 return float('inf')
-        base = priority[nodes[i][j]]
+        base = priority.get(nodes[i][j], priority["Normal"])
+        if p.RABBIT_HOLE and (nodes[i][j] == "Unknown" or (p.LVL == 3 and nodes[i][j] == "Risky")):
+            # Prefer a fully recognized, lower-risk path, but do not reject the
+            # only available route. Keep upstream whole-path cost evaluation.
+            base += 10000
         if i == L - 1:
             return base
         best = float('inf')
@@ -238,8 +242,7 @@ def move():
             timer=2)
         if not now_rgb.button("Danteh"):
             if p.RABBIT_HOLE:
-                from source.rabbit_hole_runtime import checkpoint
-                checkpoint("route", "Map position could not be recognized. Choose the next node manually.")
+                p.RABBIT_NODE = "Unknown"
             gui.press("space")
             if enter():
                 logging.info("Entering unknown node")
@@ -253,8 +256,7 @@ def move():
     if len(regions) == 0:
         print("Case 2: No directions are visible")
         if p.RABBIT_HOLE:
-            from source.rabbit_hole_runtime import checkpoint
-            checkpoint("route", "No route was recognized. Choose the next node manually.")
+            p.RABBIT_NODE = "Unknown"
         if input_with_fallback("space", lambda: win_click(705, 411), enter) or move_fallback():
             logging.info("Entering unknown node")
             return True
@@ -347,8 +349,7 @@ def move():
 
 def move_fallback():
     if p.RABBIT_HOLE:
-        from source.rabbit_hole_runtime import checkpoint
-        checkpoint("route", "Unknown nodes are not entered in Rabbit Hole mode. Choose the next node manually.")
+        p.RABBIT_NODE = "Unknown"
     for key in ["d", "space"]:
         gui.press(key)
         if enter():

@@ -86,9 +86,9 @@ class PolicyTests(unittest.TestCase):
                 combat(1, turn=turn)
 
     def test_unknown_and_risky_nodes(self):
-        self.assertFalse(node_allowed(3, "Risky"))
+        self.assertTrue(node_allowed(3, "Risky"))
         self.assertTrue(node_allowed(2, "Risky"))
-        self.assertFalse(node_allowed(1, "Unknown"))
+        self.assertTrue(node_allowed(1, "Unknown"))
         self.assertFalse(node_allowed(1, None))
 
     def test_shop_upgrade_timing(self):
@@ -103,12 +103,12 @@ class RoutingTests(unittest.TestCase):
         self.params = types.SimpleNamespace(RABBIT_HOLE=True, LVL=3)
         self.move = load_without_desktop("move", p=self.params)
 
-    def test_blocks_risky_even_if_other_route_is_slower(self):
+    def test_prefers_safe_even_if_other_route_is_slower(self):
         nodes = [["Event", "Focused", None], ["Risky", "Focused", None]]
         self.assertEqual(self.move.next_step(nodes, []), (1, "Focused"))
 
-    def test_no_safe_path(self):
-        self.assertEqual(self.move.next_step([["Risky", None, None]], []), (None, None))
+    def test_unavoidable_risky_path_is_selected(self):
+        self.assertEqual(self.move.next_step([["Risky", None, None]], []), (0, "Risky"))
 
     def test_cross_connection_avoids_future_risk(self):
         nodes = [["Event", None, None], ["Risky", "Normal", None]]
@@ -122,10 +122,15 @@ class RoutingTests(unittest.TestCase):
     def test_unknown_node_is_not_chosen(self):
         self.assertEqual(self.move.next_step([["Unknown", "Normal", None]], []), (1, "Normal"))
 
-    def test_unknown_route_fallback_stops_before_input(self):
-        with patch("source.rabbit_hole_runtime.checkpoint", side_effect=CheckpointRequired("route")):
-            with self.assertRaises(CheckpointRequired):
-                self.move.move_fallback()
+    def test_unknown_route_uses_existing_fallback(self):
+        self.move.gui = types.SimpleNamespace(press=Mock())
+        self.move.enter = Mock(return_value=True)
+        self.assertTrue(self.move.move_fallback())
+        self.assertEqual(self.params.RABBIT_NODE, "Unknown")
+        self.move.gui.press.assert_called_once_with("d")
+
+    def test_unavoidable_unknown_path_is_selected(self):
+        self.assertEqual(self.move.next_step([["Unknown", None, None]], []), (0, "Unknown"))
 
 
 class PackControllerTests(unittest.TestCase):

@@ -3,7 +3,7 @@ from source.rabbit_hole import CheckpointRequired
 
 
 def allowed_encounter(floor, node):
-    return floor in (1, 2) or (floor == 3 and node in ("Normal", "Focused", "Miniboss"))
+    return floor in (1, 2) or (floor == 3 and node in ("Normal", "Focused", "Miniboss", "Risky"))
 
 
 def slot_and_start(io, floor, node=None):

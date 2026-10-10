@@ -77,9 +77,7 @@ def choose_pack(number, detected, refresh_available):
 
 def node_allowed(number, name):
     floor_plan(number)
-    return name in {"Normal", "Focused", "Miniboss", "Event", "Shop", "Boss", "Risky"} and not (
-        number == 3 and name == "Risky"
-    )
+    return name in {"Normal", "Focused", "Miniboss", "Event", "Shop", "Boss", "Risky", "Unknown"}
 
 
 def combat(number, boss=False, faelantern=False, turn=1):

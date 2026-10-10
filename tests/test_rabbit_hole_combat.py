@@ -69,12 +69,13 @@ class OverclockSequenceTests(unittest.TestCase):
         self.assertEqual(io.actions, [])
 
     def test_late_floors_and_unknown_floor_three_are_untouched(self):
-        for floor, node in ((3, None), (3, "Boss"), (3, "Risky"), (4, "Boss"), (5, "Boss")):
+        for floor, node in ((3, None), (3, "Boss"), (4, "Boss"), (5, "Boss")):
             io = ReplayInput(["ready"])
             with self.subTest(floor=floor, node=node), self.assertRaises(CheckpointRequired):
                 slot_and_start(io, floor, node)
             self.assertFalse(io.actions)
         self.assertTrue(allowed_encounter(3, "Normal"))
+        self.assertTrue(allowed_encounter(3, "Risky"))
 
     def test_mouse_is_released_when_hold_is_interrupted(self):
         io = object.__new__(DesktopInput)

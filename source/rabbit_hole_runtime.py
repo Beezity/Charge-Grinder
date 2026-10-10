@@ -43,11 +43,11 @@ def try_first_turn():
     if state is None:
         return False
     eligible = {"faelantern":3,"kod":4,"roses":5}
-    if encounter in eligible and p.LVL == eligible[encounter] and p.RABBIT_NODE == "Boss":
+    if encounter in eligible and p.LVL == eligible[encounter] and p.RABBIT_NODE in ("Boss", "Unknown"):
         if state.planning or (encounter == "kod" and state.turn >= 3):
             run_solo_battle(vision,encounter)
             return True
-    if p.LVL in (3,4,5) and p.RABBIT_NODE in ("Normal","Focused","Miniboss") and state.planning and not encounter:
+    if p.LVL in (3,4,5) and p.RABBIT_NODE in ("Normal","Focused","Miniboss","Risky","Unknown") and state.planning and not encounter:
         run_solo_battle(vision,"ordinary")
         return True
     return False
@@ -56,7 +56,7 @@ def try_first_turn():
 def deploy():
     from source.utils.utils import p
     from source.rabbit_hole_combat import allowed_encounter
-    if not allowed_encounter(p.LVL, p.RABBIT_NODE) and p.RABBIT_NODE not in ("Boss", "Normal", "Focused", "Miniboss"):
+    if not allowed_encounter(p.LVL, p.RABBIT_NODE) and p.RABBIT_NODE not in ("Boss", "Normal", "Focused", "Miniboss", "Risky", "Unknown"):
         checkpoint("combat")
     from source.battle import select
     if not select(["FAUST"]):

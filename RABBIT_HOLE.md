@@ -287,3 +287,13 @@ run counts, failure limits, Stop, connection retries and HP ranking. The complet
 Windows run still needs testing. Pack Search after exhausted refreshes has no
 existing upstream implementation to reuse and remains a checkpoint. Unrecognized
 combat and route layouts likewise still stop. No full AFK certification is claimed.
+
+## Unavoidable encounter update
+
+Whole-path routing prefers recognized safer routes, but risky floor-3 nodes and
+unknown nodes are no longer forbidden. If unavoidable, upstream routing and its
+existing map fallback enter them. Faust deploys solo and uses the existing EGO
+controller; surviving ordinary enemies use Win Rate. Known bosses encountered
+through an unknown node keep their specific handling, including Faelantern's
+Damage fallback and KoD turn-3 retry. Unknown combat UI still requires recognition
+before inputs. A map fallback that cannot actually enter a node still stops.
