@@ -1,6 +1,7 @@
 """Recognition of recorded solo boss layouts at 1920x1080."""
 from pathlib import Path
 import cv2
+import numpy as np
 from source.rabbit_hole_vision import HollowVision
 from source.rabbit_hole_combat_policy import BattleState
 
@@ -23,6 +24,42 @@ class BossVision(HollowVision):
 
     def ego_selected(self, frame):
         return any(self.locate(frame,n) is not None for n in self.templates if n.startswith("ego_slot"))
+
+    def targets(self, frame, name):
+        """Find each copy of a known enemy skill's inner artwork, excluding arrows."""
+        spec,template = self.templates[name]
+        x,y,w,h = spec['search']
+        gray = cv2.cvtColor(frame,cv2.COLOR_BGR2GRAY)
+        match = cv2.matchTemplate(gray[y:y+h,x:x+w],template,cv2.TM_CCOEFF_NORMED)
+        result=[]
+        while True:
+            _,score,_,point = cv2.minMaxLoc(match)
+            if score < spec['threshold']:
+                break
+            px,py=point
+            result.append((x+px+template.shape[1]//2,y+py+template.shape[0]//2))
+            match[max(0,py-35):py+36,max(0,px-35):px+36]=-1
+        return result
+
+    def roses_targets(self, frame):
+        if frame is None or frame.shape[:2] != (1080,1920) or not self.ego_selected(frame):
+            return False
+        hsv=cv2.cvtColor(frame,cv2.COLOR_BGR2HSV)
+        cyan=cv2.inRange(hsv,(85,180,180),(95,255,255))
+        yellow=cv2.inRange(hsv,(25,220,230),(35,255,255))
+        groups={n:self.targets(frame,'roses_'+n) for n in ('red','green','flower')}
+        for n in ('red','green'):
+            groups[n] += self.targets(frame,'roses_'+n+'_alt')
+        if not all(groups.values()):
+            return False
+        def arrow(mask,points,minimum):
+            # Require the arrow color at the icon, not along a distant curve.
+            return any(np.count_nonzero(mask[max(0,y-25):y+16,x-30:x+31]) >= minimum for x,y in points)
+        red_clash=arrow(yellow,groups['red'],40)
+        green_clash=arrow(yellow,groups['green'],40)
+        return bool(arrow(cyan,groups['flower'],12) and
+                    ((red_clash and arrow(cyan,groups['green'],12)) or
+                     (green_clash and arrow(cyan,groups['red'],12))))
 
     def inspect(self, frame):
         scores = self.scores(frame)

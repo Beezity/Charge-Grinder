@@ -9,7 +9,8 @@ the floor-5 difficulty switch, conservative map navigation, early first-turn
 Hollow overclock and manual checkpoints.
 The shop adapter now handles purchases, sales, fusion, upgrades and SP healing
 with visual verification. The new solo combat controller selects Le Trou and Boucher
-un trou, resets KoD at turn 3, and applies Win Rate/Damage fallbacks. Gifts, trials,
+un trou, resets KoD at turn 3, verifies Roses attack-weight targets, and applies
+Win Rate/Damage fallbacks. Gifts, trials,
 events, startup, unrecognized combat and reward collection still require manual
 action. Shop and combat inputs await live Windows validation.
 Windows input and live recognition have not been tested in this environment.
@@ -111,27 +112,35 @@ tests use the supplied frames, not independent gameplay captures.
 
 The five combat videos supplied on 10 October calibrate turn counters 1/2/3,
 Boucher's menu, selected EGO, KoD/Faelantern/Roses scenes, and Faelantern's emerged
-and held-click overlay states. EGO usage is recorded only after a verified turn
+and held-click overlay states, the Retry Stage menu and Roses target arrows. EGO usage is recorded only after a verified turn
 start; duplicate planning frames cannot repeat an input. Resuming a later turn
 without usage history stops rather than guessing whether EGO was used.
 
 - KoD: Le Trou then Boucher; counter 3 triggers a battle retry before a fallback.
-  The retry menu/confirmation use exact recognized text and stop when ambiguous.
-  **No supplied clip shows the retry menu, so that interaction is unvalidated.**
-  At most three retries are attempted. Usage resets only after verified turn 1.
+  The supplied retry clip calibrates Esc → Retry Stage → defeat/loading, with
+  no separate confirmation. The handler redeploys Faust if selection appears and
+  waits for verified turn 1 before clearing EGO usage. At most three retries are
+  attempted; timeouts never repeat the retry click.
 - Faelantern: Le Trou, accept corrosion, do not reset for Charm. Wait through an
   underground turn using Damage in the calibrated solo layout;
   use Boucher once emerged and selectable. After Boucher, surviving enemies use
-  Damage. Deployment selects Faust solo.
+  Damage. Deployment selects Faust solo. The wiki documents that Charm is not
+  applied with only one Sinner present. A greyed portrait with an assigned skill
+  is the user-specified Charm cue; the sword shown while holding a portrait is
+  not treated as Charm. No Charm-triggered retry is used.
 - Other supported solo fights: after overclock Hollow or Boucher, surviving enemies
   use Win Rate. Ordinary later-floor solo encounters now select Awakening.
-- Sign of Roses: turn 1 is supported, but **turn 2 still checkpoints** until Rose,
-  Signpost and Flesh coverage can be verified. The recording shows the sequence;
-  automatic target verification is not implemented yet.
+- Sign of Roses: Le Trou on turn 1; Boucher on turn 2. Before starting, require
+  a yellow clash arrow at one body part, cyan attack-weight arrow at the other
+  body part, and cyan attack-weight arrow at the flower. The reader identifies
+  both body skill groups and the flower separately. Missing coverage stops
+  without starting or recording Boucher as used. Changed layouts still need
+  calibration; this build does not guess targets or drag across unknown layouts.
 
-Still needed: a recording of KoD's battle retry menu and confirmation, verified
-Roses targeting, independent Windows input trials, and remaining layout
-coverage. This is a combat implementation draft, not completed Milestone 4.
+Still needed: independent Windows input trials, KoD retry completion through
+redeployment, and remaining layout coverage. Roses arrows and the retry menu
+are calibrated from the supplied recordings. This is a combat implementation
+draft; Milestone 4 still requires live validation.
 
 Checkpoint screenshots are local only; the draft does not upload them.
 
@@ -141,9 +150,9 @@ Checkpoint screenshots are local only; the draft does not upload them.
 .\.venv\Scripts\python.exe -m unittest discover -s tests -v
 ```
 
-**87 tests pass locally**, including policy/controller/settings tests, five supplied combat
-screenshot cases, eight shop video replay tests, and nineteen new combat checks
-(five replay the new recordings). To include the originals:
+**93 tests pass locally**, including policy/controller/settings tests, five supplied combat
+screenshot cases, eight shop video replay tests, and twenty-five new combat checks
+(eight replay the new recordings). To include the originals:
 
 ```powershell
 $env:RABBIT_CAPTURE_DIR = "C:\path\to\combat-screenshots"
@@ -152,8 +161,14 @@ $env:RABBIT_COMBAT_VIDEO_DIR = "C:\path\to\OBS Recordings"
 .\.venv\Scripts\python.exe -m unittest discover -s tests -v
 ```
 
-Original videos are not distributed. The replay reads the filenames
-`2026-10-10 09-19-07.mp4` and `2026-10-10 09-21-37.mp4`.
+Original videos are not distributed. Shop replays read
+`2026-10-10 09-19-07.mp4` and `2026-10-10 09-21-37.mp4`. Combat replays read
+the supplied `11-06-36`, `11-08-43`, `11-11-00`, `11-14-17` and `11-17-41` clips
+from 10 October 2026.
+
+Mechanics reference: [Faelantern/Enemy](https://limbuscompany.wiki.gg/wiki/Faelantern/Enemy).
+The indexed page confirms solo Charm exclusion and that breaking Fairy exposes
+Body. It does not independently document the portrait-color UI cue.
 Desktop input is mocked; passing replay tests does not prove Windows click timing,
 complete inventory traversal or AFK readiness. Upstream GPL-3.0 is preserved.
 
@@ -206,9 +221,9 @@ can repeat only after a verified 45-SP gain, until the intended sinner reaches
 
 ## Remaining milestones after the shop
 
-1. Finish Awakening, turn 2, focused combat, Faelantern, Knight of Despair retries,
-   and Sign of Roses targeting. The solo controller is implemented; additional layout coverage,
-   retry-menu validation and Roses target verification remain.
+1. Validate Awakening, turn 2, Faelantern, Knight of Despair retries and Sign of
+   Roses on Windows. The solo controller, retry menu and three-target verifier
+   are implemented; live input, retry redeployment and additional layouts remain.
 2. Automate startup, gifts, events, trials, pack search, rewards and transitions.
 3. Add bounded recovery, restart/repeat runs and resource/stop conditions.
 4. Validate complete and repeated AFK runs on Windows.

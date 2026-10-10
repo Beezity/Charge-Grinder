@@ -4,7 +4,7 @@ import unittest
 from unittest.mock import Mock
 from source.rabbit_hole import CheckpointRequired
 from source.rabbit_hole_combat_policy import BattlePolicy, BattleState
-from source.rabbit_hole_boss_combat import advance
+from source.rabbit_hole_boss_combat import advance, SoloBattleIO
 
 
 class BattlePolicyTests(unittest.TestCase):
@@ -79,11 +79,43 @@ class BattlePolicyTests(unittest.TestCase):
         advance(p,BattleState(3),io)
         self.assertFalse(p.boucher_used);self.assertFalse(p.started_turns)
 
-    def test_roses_does_not_start_without_verified_three_part_targeting(self):
+    def test_roses_verifies_three_part_targeting_before_start(self):
         p=BattlePolicy('roses',le_trou_used=True);io=Mock()
+        advance(p,BattleState(2),io)
+        self.assertEqual([c[0] for c in io.mock_calls],['choose_ego','verify_roses','start'])
+        self.assertTrue(p.boucher_used)
+
+    def test_missing_roses_target_does_not_start_or_record_boucher(self):
+        p=BattlePolicy('roses',le_trou_used=True);io=Mock()
+        io.verify_roses.side_effect=CheckpointRequired('missing flower')
         with self.assertRaises(CheckpointRequired):
             advance(p,BattleState(2),io)
-        io.start.assert_not_called()
+        io.start.assert_not_called();self.assertFalse(p.boucher_used)
+
+
+
+class RetryInputTests(unittest.TestCase):
+    def io(self):
+        import types
+        io=object.__new__(SoloBattleIO)
+        io.guard=Mock();io.press=Mock();io.click=Mock()
+        io.vision=Mock();io.vision.locate.return_value=(985,555)
+        io.wait_for=Mock(return_value='verified retry menu')
+        io.u=types.SimpleNamespace(time=types.SimpleNamespace(monotonic=Mock(side_effect=[0,1,2]),sleep=Mock()),now=Mock())
+        io.u.now.button.return_value=False
+        return io
+
+    def test_recorded_direct_retry_has_no_extra_confirm_click(self):
+        io=self.io();io.observe_battle=Mock(side_effect=[('kod',BattleState(3)),('kod',BattleState(1))])
+        self.assertEqual(io.reset().turn,1)
+        io.press.assert_called_once_with('esc');io.click.assert_called_once_with((985,555))
+
+    def test_retry_timeout_does_not_click_retry_again(self):
+        io=self.io();io.u.time.monotonic.side_effect=[0,1,61]
+        io.observe_battle=Mock(return_value=('kod',BattleState(3)))
+        with self.assertRaises(CheckpointRequired):
+            io.reset()
+        io.click.assert_called_once_with((985,555))
 
 
 VIDEO_DIR=os.environ.get('RABBIT_COMBAT_VIDEO_DIR')
@@ -125,3 +157,29 @@ class CombatVideoTests(unittest.TestCase):
         f=self.frame('11-17-41',28)
         self.assertEqual(self.v.inspect(f[::2,::2]),(None,None))
         f[86:133,66:144]=0;self.assertEqual(self.v.inspect(f),(None,None))
+
+    def test_retry_stage_menu_is_recognized_without_confirmation(self):
+        f=self.frame('11-08-43',3.5)
+        self.assertIsNotNone(self.v.locate(f,'retry_stage'))
+        self.assertIsNone(self.v.locate(self.frame('11-08-43',1),'retry_stage'))
+
+    def test_roses_three_target_arrows_and_missing_target_negatives(self):
+        f=self.frame('11-17-41',28)
+        self.assertTrue(self.v.roses_targets(f))
+        for kind in ('red','green','flower'):
+            broken=f.copy();hsv=self.cv2.cvtColor(broken,self.cv2.COLOR_BGR2HSV)
+            mask=self.cv2.inRange(hsv,(25,220,230),(35,255,255)) if kind=='red' else self.cv2.inRange(hsv,(85,180,180),(95,255,255))
+            points=self.v.targets(f,'roses_'+kind)
+            if kind in ('red','green'):
+                points+=self.v.targets(f,'roses_'+kind+'_alt')
+            for x,y in points:
+                roi=broken[y-30:y+20,x-35:x+36]
+                roi[mask[y-30:y+20,x-35:x+36]>0]=0
+            with self.subTest(missing=kind):
+                self.assertFalse(self.v.roses_targets(broken))
+
+    def test_both_faelantern_recordings_start_with_selectable_solo_faust(self):
+        for name in ('11-11-00','11-14-17'):
+            b,s=self.v.inspect(self.frame(name,0))
+            self.assertEqual(b,'faelantern');self.assertTrue(s.planning)
+            self.assertEqual(s.turn,1);self.assertFalse(s.charmed)

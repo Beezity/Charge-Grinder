@@ -80,30 +80,31 @@ class SoloBattleIO(DesktopInput):
             self.reader = ShopVision()
         return self.reader
 
-    def text_button(self, frame, labels):
-        words = self._reader().read(frame)
-        matches = [w for w in words if w.score >= .94 and key(w.text) in labels]
-        if len(matches) != 1:
-            raise CheckpointRequired('The expected battle retry control is not uniquely recognized.')
-        return (round(matches[0].x),round(matches[0].y))
+    def verify_roses(self):
+        self.wait_for(self.vision.roses_targets,
+                      'Boucher does not visibly cover both Roses parts and the flower.')
 
     def reset(self):
-        # Never use the run-forfeit action as a battle retry.
+        # The supplied clip verifies Esc -> Retry Stage -> defeat/loading.
+        # This action has no separate confirmation dialog.
         self.press('esc')
-        self.u.time.sleep(.3)
-        frame = self.capture()
-        point = self.text_button(frame,{'retry','retrybattle','restartbattle','retrystage'})
-        self.click(point)
-        self.u.time.sleep(.3)
-        frame = self.capture()
-        words = self._reader().read(frame)
-        prompt = key(' '.join(w.text for w in words if w.score >= .94))
-        if 'battle' not in prompt or not ('retry' in prompt or 'restart' in prompt):
-            raise CheckpointRequired('Battle retry confirmation is unrecognized; no confirmation was clicked.')
-        self.click(self.text_button(frame,{'confirm'}))
-        result = self.wait_for(lambda f: (lambda b,s: s is not None and s.turn == 1 and s.planning)(
-            *self.vision.inspect(f)), 'Battle retry did not return to turn 1.',seconds=45)
-        return self.vision.inspect(result)[1]
+        frame = self.wait_for(lambda f: self.vision.locate(f,'retry_stage') is not None,
+                              'The Retry Stage menu did not appear.')
+        self.click(self.vision.locate(frame,'retry_stage'))
+        deadline = self.u.time.monotonic()+60
+        deployed=False
+        while self.u.time.monotonic() < deadline:
+            self.guard()
+            _,state = self.observe_battle()
+            if state is not None and state.turn == 1 and state.planning:
+                return state
+            if self.u.now.button('TOBATTLE') and not deployed:
+                from source.battle import select
+                if not select(['FAUST']):
+                    raise CheckpointRequired('Could not redeploy Faust after Retry Stage.')
+                deployed=True
+            self.u.time.sleep(.2)
+        raise CheckpointRequired('Retry Stage did not return to a verified turn-1 battle; no retry click was repeated.')
 
     def wait(self):
         self.guard()
@@ -118,10 +119,10 @@ def advance(policy, state, io):
     if action == 'reset':
         policy.reset_verified(io.reset())
         return 'reset'
-    if action == 'boucher_roses':
-        raise CheckpointRequired('Sign of Roses requires verified Rose, Signpost and Flesh targeting; no turn was started.')
-    if action in ('le_trou','boucher'):
-        io.choose_ego(action)
+    if action in ('le_trou','boucher','boucher_roses'):
+        io.choose_ego('boucher' if action == 'boucher_roses' else action)
+        if action == 'boucher_roses':
+            io.verify_roses()
     else:
         io.auto_select('damage' if action in ('damage','wait_emergence') else 'winrate')
     io.start(state)
